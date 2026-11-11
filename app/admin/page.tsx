@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard } from 'lucide-react';
+import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard, Upload } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -32,7 +32,8 @@ export default function AdminPage() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('1 كيلو');
-  const [image, setImage] = useState('');
+  const [imageString, setImageString] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
   const [description, setDescription] = useState('');
 
   // Form State - Video
@@ -81,13 +82,31 @@ export default function AdminPage() {
     alert('تم حفظ بيانات الدفع بنجاح! 💳');
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageString(reader.result as string);
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!imageString) {
+      alert('يرجى اختيار صورة للمنتج من الجهاز أولاً.');
+      return;
+    }
+
     const { error } = await supabase.from('products').insert([
-      { name, price: parseFloat(price), size, image, description }
+      { name, price: parseFloat(price), size, image: imageString, description }
     ]);
+
     if (!error) {
-      setName(''); setPrice(''); setImage(''); setDescription('');
+      setName(''); setPrice(''); setImageString(''); setImagePreview(''); setDescription('');
       fetchAdminData();
       alert('تم إضافة المنتج بنجاح! 🍯');
     } else {
@@ -202,11 +221,11 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* 1. قسم إضافة منتج مع رابط الصورة */}
+        {/* 1. قسم إضافة منتج مع رفع الصورة محلياً */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-700" />
-            إضافة منتج أو باقة عسل جديدة
+            إضافة منتج أو باقة عسل جديدة (اختر صورة من جهازك)
           </h2>
           <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -222,9 +241,21 @@ export default function AdminPage() {
               <input type="text" placeholder="مثال: 1 كيلو / نصف كيلو" required value={size} onChange={e => setSize(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">رابط صورة المنتج (URL)</label>
-              <input type="url" placeholder="https://i.ibb.co/..." required value={image} onChange={e => setImage(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <label className="block text-xs font-bold text-stone-700 mb-1">صورة المنتج من الجهاز</label>
+              <label className="w-full border border-dashed border-amber-300 bg-amber-50/30 hover:bg-amber-50 rounded-xl p-2.5 text-center cursor-pointer flex items-center justify-center gap-2 text-xs text-stone-700 transition">
+                <Upload className="w-4 h-4 text-amber-700" />
+                <span>اختر صورة المنتج</span>
+                <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+              </label>
             </div>
+
+            {imagePreview && (
+              <div className="sm:col-span-2 text-center">
+                <p className="text-xs font-bold text-stone-500 mb-1">معاينة الصورة المختارة:</p>
+                <img src={imagePreview} alt="Preview" className="h-28 mx-auto rounded-xl border border-amber-200 object-cover shadow-sm" />
+              </div>
+            )}
+
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-stone-700 mb-1">وصف المنتج</label>
               <textarea placeholder="وصف مختصر لفوائد العسل..." value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" rows={2} />
