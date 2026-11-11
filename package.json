@@ -1,14 +1,5 @@
-{
-  "name": "pob-honey",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
+"dependencies": {
+    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.0",
     "@tailwindcss/turbopack": "^4.0.0",
     "lucide-react": "^1.16.0",
@@ -16,12 +7,3 @@
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "postcss": "^8.0.0",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.0.0"
-  }
-}
