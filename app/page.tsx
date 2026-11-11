@@ -71,27 +71,18 @@ export default function HoneyStore() {
     }
   };
 
-  // دالة ذكية للتعرف على روابط يوتيوب، الـ Shorts، وتيك توك
+  // دالة ذكية للتعرف على روابط يوتيوب والـ Shorts
   const getEmbedUrl = (url: string) => {
     if (!url) return null;
     
-    // 1. تيك توك (TikTok)
-    if (url.includes('tiktok.com')) {
-      const match = url.match(/\/video\/(\d+)/);
-      if (match && match[1]) {
-        return `https://www.tiktok.com/embed/v2/${match[1]}`;
-      }
-      return url; // كخيار احتياطي إذا كان الرابط بصيغة أخرى
-    }
-
-    // 2. يوتيوب Shorts
+    // التعامل مع روابط Shorts
     if (url.includes('/shorts/')) {
       const parts = url.split('/shorts/');
       const videoId = parts[1]?.split('?')[0];
       if (videoId) return `https://www.youtube.com/embed/${videoId}`;
     }
 
-    // 3. يوتيوب العادي
+    // التعامل مع الروابط العادية
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
@@ -240,13 +231,19 @@ export default function HoneyStore() {
                   <div key={video.id} className="bg-white rounded-2xl border border-amber-200 overflow-hidden shadow-md flex flex-col justify-between">
                     <div className="relative h-64 bg-stone-900 flex items-center justify-center">
                       {isTikTok ? (
-                        <iframe 
-                          src={embedUrl || ''} 
-                          title={video.title} 
-                          className="w-full h-full" 
-                          allow="encrypted-media;" 
-                          allowFullScreen 
-                        />
+                        <a 
+                          href={video.youtube_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="w-full h-full bg-black flex flex-col items-center justify-center gap-3 text-white hover:bg-stone-950 transition group"
+                        >
+                          <div className="w-14 h-14 bg-stone-800 rounded-full flex items-center justify-center group-hover:scale-110 transition shadow-lg border border-stone-700">
+                            <svg className="w-7 h-7 fill-current text-white" viewBox="0 0 24 24">
+                              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 1 1-5.2-1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V6.07a6.28 6.28 0 0 0-1-.07A6.33 6.33 0 1 0 15.68 12V8.45a8.21 8.21 0 0 0 4.91 1.62V6.69z"/>
+                            </svg>
+                          </div>
+                          <span className="text-xs font-bold text-amber-200 bg-stone-800/80 px-3 py-1.5 rounded-xl border border-stone-700">مشاهدة فيديو تيك توك ↗</span>
+                        </a>
                       ) : embedUrl ? (
                         <iframe src={embedUrl} title={video.title} className="w-full h-full" allowFullScreen />
                       ) : (
