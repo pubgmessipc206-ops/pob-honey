@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 interface Product {
@@ -100,21 +100,25 @@ export default function HoneyStore() {
 
   return (
     <div className="min-h-screen bg-amber-50/40 text-stone-800 font-sans" dir="rtl">
-      {/* Header */}
+      {/* Header مع أيقونة الإعدادات المخفية على الجنب */}
       <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
-            <ShoppingBag className="w-7 h-7" />
-            <span>POB~Honey</span>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
+              <ShoppingBag className="w-7 h-7" />
+              <span>POB~Honey</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="bg-amber-800 hover:bg-amber-900 text-amber-100 text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold border border-amber-600 transition">
-              لوحة التحكم ⚙️
-            </Link>
+
+          <div className="flex items-center gap-3">
             <a href="https://wa.me/201001316599" target="_blank" rel="noopener noreferrer" className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
               <Phone className="w-4 h-4" />
               واتساب
             </a>
+            {/* أيقونة الإعدادات المخفية على جنب */}
+            <Link href="/admin" title="الإعدادات" className="w-9 h-9 bg-amber-800/80 hover:bg-amber-900 text-amber-200 rounded-lg flex items-center justify-center border border-amber-600 transition">
+              <Settings className="w-5 h-5" />
+            </Link>
           </div>
         </div>
       </nav>
@@ -126,7 +130,7 @@ export default function HoneyStore() {
             أجود أنواع العسل الطبيعي النقي 100%
           </h1>
           <p className="text-amber-800 text-base sm:text-lg mb-6">
-            من مناحلنا إلى مائدتك مباشرة. جودة مضمونة وصحة متكاملة لأسترتك.
+            من مناحلنا إلى مائدتك مباشرة. جودة مضمونة وصحة متكاملة لأسرتك.
           </p>
           <div className="flex justify-center gap-6 text-amber-900 font-bold text-sm">
             <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-amber-700" /> مفحوص ومضمون</div>
@@ -142,7 +146,7 @@ export default function HoneyStore() {
           <div className="text-center py-12 text-amber-800 font-semibold">جاري تحميل المنتجات من Supabase...</div>
         ) : products.length === 0 ? (
           <div className="text-center py-12 text-amber-900 bg-amber-100/50 rounded-2xl border border-amber-200">
-            لا توجد منتجات حالياً. اذهب إلى <Link href="/admin" className="underline font-bold text-amber-700">لوحة التحكم</Link> لإضافة المنتجات والباقات!
+            لا توجد منتجات حالياً. اضغط على أيقونة الإعدادات ⚙️ بالأعلى لإضافة المنتجات والباقات!
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
