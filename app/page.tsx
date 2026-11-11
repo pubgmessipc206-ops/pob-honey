@@ -2,37 +2,44 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus } from 'lucide-react';
 import Link from 'next/link';
 
-interface MediaItem {
+interface Product {
   id: string;
-  title: string;
-  url: string;
-  type: string;
-  section: string;
-  created_at: string;
+  name: string;
+  price: number;
+  size: string;
+  image: string;
+  description: string;
 }
 
-export default function HomePage() {
-  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+interface VideoItem {
+  id: string;
+  title: string;
+  youtube_url: string;
+}
+
+export default function HoneyStore() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [customerName, setCustomerName] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
 
   useEffect(() => {
-    fetchMedia();
+    fetchData();
   }, []);
 
-  const fetchMedia = async () => {
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('media_items')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+      const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setMediaList(data);
-      }
+      if (pData) setProducts(pData);
+      if (vData) setVideos(vData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -40,204 +47,208 @@ export default function HomePage() {
     }
   };
 
-  const heroItems = mediaList.filter((item) => item.section === 'hero');
-  const aboutItems = mediaList.filter((item) => item.section === 'about');
-  const galleryItems = mediaList
-    .filter((item) => item.section === 'gallery' || !item.section)
-    .filter((item) => (filter === 'all' ? true : item.type === filter));
+  const getEmbedUrl = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
+  };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCart(prev => {
+      const current = prev[id] || 0;
+      const updated = current + delta;
+      if (updated <= 0) {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      }
+      return { ...prev, [id]: updated };
+    });
+  };
+
+  const getTotalPrice = () => {
+    return Object.entries(cart).reduce((total, [id, qty]) => {
+      const p = products.find(item => item.id === id);
+      return total + (p ? p.price * qty : 0);
+    }, 0);
+  };
+
+  const handleWhatsAppCheckout = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (Object.keys(cart).length === 0) {
+      alert('يرجى اختيار منتج واحد على الأقل قبل إتمام الطلب.');
+      return;
+    }
+
+    let message = `🛒 *طلب جديد من متجر POB~Honey*\n\n`;
+    if (customerName) message += `👤 الاسم: ${customerName}\n`;
+    if (customerAddress) message += `📍 العنوان: ${customerAddress}\n\n`;
+    message += `*المنتجات المطلوبة:*\n`;
+
+    Object.entries(cart).forEach(([id, qty]) => {
+      const p = products.find(item => item.id === id);
+      if (p) {
+        message += `- ${p.name} (${p.size}) × ${qty} = ${p.price * qty} جنيه\n`;
+      }
+    });
+
+    message += `\n💰 *الإجمالي الكلي: ${getTotalPrice()} جنيه*\n`;
+    message += `\nشكراً لاختياركم POB~Honey 🍯`;
+
+    window.open(`https://wa.me/201001316599?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans rtl overflow-x-hidden max-w-full" dir="rtl">
-      {/* القائمة العلوية متجاوبة مع الموبايل */}
-      <nav className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center max-w-7xl mx-auto">
-        <div className="text-xl sm:text-2xl font-black text-amber-400 tracking-wider flex items-center gap-2">
-          📸 PhotoFolio
-        </div>
-        <div className="flex flex-wrap justify-center gap-3 sm:gap-6 items-center text-xs sm:text-sm font-semibold text-slate-300">
-          <a href="#hero" className="hover:text-amber-400 transition">الرئيسية</a>
-          <a href="#about" className="hover:text-amber-400 transition">من نحن</a>
-          <a href="#gallery" className="hover:text-amber-400 transition">معرض الأعمال</a>
-          <Link
-            href="/admin"
-            className="bg-amber-500 text-slate-950 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-bold hover:bg-amber-400 transition text-xs sm:text-sm"
-          >
-            لوحة التحكم ⚙️
-          </Link>
+    <div className="min-h-screen bg-amber-50/40 text-stone-800 font-sans" dir="rtl">
+      {/* Header */}
+      <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
+            <ShoppingBag className="w-7 h-7" />
+            <span>POB~Honey</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/admin" className="bg-amber-800 hover:bg-amber-900 text-amber-100 text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold border border-amber-600 transition">
+              لوحة التحكم ⚙️
+            </Link>
+            <a href="https://wa.me/201001316599" target="_blank" rel="noopener noreferrer" className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
+              <Phone className="w-4 h-4" />
+              واتساب
+            </a>
+          </div>
         </div>
       </nav>
 
-      {/* قسم Hero */}
-      <section id="hero" className="relative py-12 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto text-center">
-        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white mb-4 sm:mb-6 leading-tight break-words">
-          معرض الأعمال الفوتوغرافية & البصرية 🎬
-        </h1>
-        <p className="text-sm sm:text-lg text-slate-400 max-w-2xl mx-auto mb-8 sm:mb-10 px-2 leading-relaxed">
-          أهلاً بك في معرض أعمالي. استكشف أحدث الصور والفيديوهات الاحترافية التي قمت بإلتقاطها وتصميمها.
-        </p>
-
-        {heroItems.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6">
-            {heroItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedMedia(item)}
-                className="relative group overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800 shadow-2xl cursor-pointer"
-              >
-                {item.type === 'video' ? (
-                  <video src={item.url} autoPlay loop muted className="w-full h-64 sm:h-80 object-cover" />
-                ) : (
-                  <img src={item.url} alt={item.title} className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition duration-500" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-4 sm:p-6">
-                  <h3 className="text-base sm:text-xl font-bold text-amber-300 break-words">{item.title}</h3>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* قسم About */}
-      <section id="about" className="py-12 sm:py-16 px-4 sm:px-6 bg-slate-900/60 border-y border-slate-800">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 items-center">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 mb-3 sm:mb-4">نبذة عني</h2>
-            <p className="text-slate-300 leading-relaxed text-base sm:text-lg mb-4 sm:mb-6">
-              مصور صانع محتوى بصري شغوف بتقديم أعلى درجات الجودة والاحترافية. أشارك معكم هنا أفضل اللقطات والمقاطع التي أعمل عليها.
-            </p>
-          </div>
-          <div>
-            {aboutItems.length > 0 ? (
-              aboutItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedMedia(item)}
-                  className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-700 shadow-xl cursor-pointer"
-                >
-                  {item.type === 'video' ? (
-                    <video src={item.url} controls className="w-full h-64 sm:h-80 object-cover" />
-                  ) : (
-                    <img src={item.url} alt={item.title} className="w-full h-64 sm:h-80 object-cover" />
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="bg-slate-800 h-64 sm:h-80 rounded-2xl sm:rounded-3xl flex items-center justify-center text-slate-500 border border-dashed border-slate-700 p-4 text-center text-sm">
-                يمكنك رفع صورة لقسم "About" من لوحة التحكم
-              </div>
-            )}
+      {/* Hero */}
+      <section className="bg-gradient-to-b from-amber-100 to-amber-50/50 py-12 sm:py-16 px-4 text-center">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl sm:text-5xl font-black text-amber-950 mb-4">
+            أجود أنواع العسل الطبيعي النقي 100%
+          </h1>
+          <p className="text-amber-800 text-base sm:text-lg mb-6">
+            من مناحلنا إلى مائدتك مباشرة. جودة مضمونة وصحة متكاملة لأسترتك.
+          </p>
+          <div className="flex justify-center gap-6 text-amber-900 font-bold text-sm">
+            <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-amber-700" /> مفحوص ومضمون</div>
+            <div className="flex items-center gap-1"><Award className="w-4 h-4 text-amber-700" /> إنتاج فاخر</div>
           </div>
         </div>
       </section>
 
-      {/* قسم المعرض */}
-      <section id="gallery" className="py-12 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 sm:mb-10 gap-4 text-center sm:text-right">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">معرض الأعمال المتميزة</h2>
-            <p className="text-slate-400 text-xs sm:text-sm">استعرض كل الصور والفيديوهات التي تم رفعها</p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 max-w-full">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
-                filter === 'all' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              الكل ({galleryItems.length})
-            </button>
-            <button
-              onClick={() => setFilter('image')}
-              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
-                filter === 'image' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              صور 📷
-            </button>
-            <button
-              onClick={() => setFilter('video')}
-              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
-                filter === 'video' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              فيديوهات 🎥
-            </button>
-          </div>
-        </div>
-
+      {/* Products Section */}
+      <section className="max-w-7xl mx-auto px-4 py-12">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-amber-950 mb-8">منتجاتنا المميزة وباقات الأسعار</h2>
         {loading ? (
-          <div className="text-center py-16 sm:py-20 text-slate-400 text-base sm:text-lg">جاري تحميل الأعمال من Supabase...</div>
-        ) : galleryItems.length === 0 ? (
-          <div className="text-center py-16 sm:py-20 px-4 text-slate-500 bg-slate-900/40 rounded-3xl border border-slate-800 text-xs sm:text-sm">
-            لا توجد عناصر في المعرض حالياً. اذهب إلى <Link href="/admin" className="text-amber-400 underline">لوحة التحكم</Link> لرفع محتوى جديد!
+          <div className="text-center py-12 text-amber-800 font-semibold">جاري تحميل المنتجات من Supabase...</div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12 text-amber-900 bg-amber-100/50 rounded-2xl border border-amber-200">
+            لا توجد منتجات حالياً. اذهب إلى <Link href="/admin" className="underline font-bold text-amber-700">لوحة التحكم</Link> لإضافة المنتجات والباقات!
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            {galleryItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedMedia(item)}
-                className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-amber-400/50 transition shadow-lg group flex flex-col cursor-pointer"
-              >
-                <div className="relative h-48 sm:h-64 overflow-hidden bg-slate-950">
-                  {item.type === 'video' ? (
-                    <video src={item.url} className="w-full h-full object-cover" />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    />
-                  )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {products.map(product => (
+              <div key={product.id} className="bg-white rounded-2xl border border-amber-200 shadow-md overflow-hidden flex flex-col justify-between">
+                <div>
+                  <img src={product.image} alt={product.name} className="w-full h-52 object-cover" />
+                  <div className="p-5">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-stone-900">{product.name}</h3>
+                      <span className="bg-amber-100 text-amber-900 text-xs px-2.5 py-1 rounded-full font-bold">{product.size}</span>
+                    </div>
+                    <p className="text-stone-600 text-xs sm:text-sm mb-4 leading-relaxed">{product.description}</p>
+                    <div className="text-xl font-black text-amber-800">{product.price} جنيه</div>
+                  </div>
                 </div>
-                <div className="p-3 sm:p-4 flex justify-between items-center mt-auto gap-2">
-                  <h3 className="font-bold text-slate-200 text-sm sm:text-base truncate">{item.title}</h3>
-                  <span className="text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-slate-800 text-amber-400 shrink-0">
-                    {item.type === 'video' ? 'فيديو' : 'صورة'}
-                  </span>
+                <div className="p-5 pt-0">
+                  <div className="flex items-center justify-between border border-amber-200 rounded-xl p-2 bg-amber-50/50">
+                    <span className="text-xs font-bold text-amber-950">الكمية:</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => updateQuantity(product.id, -1)} className="w-7 h-7 bg-white border border-amber-300 rounded-lg flex items-center justify-center text-amber-900 font-bold hover:bg-amber-100">
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="font-bold text-base w-6 text-center">{cart[product.id] || 0}</span>
+                      <button onClick={() => updateQuantity(product.id, 1)} className="w-7 h-7 bg-amber-600 text-white rounded-lg flex items-center justify-center font-bold hover:bg-amber-700">
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+      </section>
+
+      {/* Youtube Section */}
+      {videos.length > 0 && (
+        <section className="bg-amber-900/5 border-y border-amber-200 py-12 px-4">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-amber-950 mb-8">معرض فيديوهات المناحل والإنتاج 🎬</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {videos.map(video => {
+                const embedUrl = getEmbedUrl(video.youtube_url);
+                return (
+                  <div key={video.id} className="bg-white rounded-2xl border border-amber-200 overflow-hidden shadow-md flex flex-col justify-between">
+                    <div className="relative h-48 bg-stone-900 flex items-center justify-center">
+                      {embedUrl ? (
+                        <iframe src={embedUrl} title={video.title} className="w-full h-full" allowFullScreen />
+                      ) : (
+                        <button onClick={() => setSelectedVideo(video)} className="flex flex-col items-center gap-2 text-amber-400">
+                          <Play className="w-12 h-12" />
+                          <span className="text-xs font-bold">تشغيل الفيديو</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="p-4 text-center">
+                      <h3 className="font-bold text-stone-900 text-sm">{video.title}</h3>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Checkout Form */}
+      <section className="max-w-xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-2xl shadow-xl border border-amber-200 p-6 sm:p-8">
+          <h3 className="text-xl sm:text-2xl font-black text-amber-950 mb-6 text-center">إتمام الطلب عبر الواتساب</h3>
+          <form onSubmit={handleWhatsAppCheckout} className="space-y-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">الاسم الكريم</label>
+              <input type="text" required value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="ادخل اسمك هنا" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">عنوان التوصيل التفصيلي</label>
+              <input type="text" required value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="المدينة / المنطقة / الشارع" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+            </div>
+            <div className="border-t border-b border-amber-100 py-3 my-2 flex justify-between font-bold text-amber-950">
+              <span>الإجمالي الكلي:</span>
+              <span>{getTotalPrice()} جنيه</span>
+            </div>
+            <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition text-sm sm:text-base">
+              <MessageCircle className="w-5 h-5" />
+              إرسال الطلب للواتساب
+            </button>
+          </form>
+        </div>
       </section>
 
       {/* Lightbox Modal */}
-      {selectedMedia && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-8"
-          onClick={() => setSelectedMedia(null)}
-        >
-          <div
-            className="relative max-w-5xl w-full bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-800 overflow-hidden shadow-2xl p-2 max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSelectedMedia(null)}
-              className="absolute top-3 left-3 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full flex items-center justify-center text-base sm:text-xl font-bold transition border border-slate-700"
-            >
-              ✕
-            </button>
-
-            <div className="flex items-center justify-center bg-black/50 rounded-xl sm:rounded-2xl overflow-hidden max-h-[70vh]">
-              {selectedMedia.type === 'video' ? (
-                <video src={selectedMedia.url} controls autoPlay className="w-full max-h-[65vh] object-contain" />
-              ) : (
-                <img src={selectedMedia.url} alt={selectedMedia.title} className="w-full max-h-[65vh] object-contain" />
-              )}
-            </div>
-
-            <div className="p-3 text-center">
-              <h3 className="text-base sm:text-xl font-bold text-amber-400 break-words">{selectedMedia.title}</h3>
+      {selectedVideo && (
+        <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSelectedVideo(null)}>
+          <div className="relative max-w-3xl w-full bg-stone-900 rounded-2xl overflow-hidden p-2" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setSelectedVideo(null)} className="absolute top-3 left-3 z-10 w-8 h-8 bg-stone-800 text-white rounded-full flex items-center justify-center font-bold">✕</button>
+            <div className="w-full h-80 sm:h-96">
+              <iframe src={getEmbedUrl(selectedVideo.youtube_url) || ''} title={selectedVideo.title} className="w-full h-full rounded-xl" allowFullScreen />
             </div>
           </div>
         </div>
       )}
 
-      {/* الفوتر */}
-      <footer className="border-t border-slate-800 py-6 sm:py-8 text-center text-slate-500 text-xs sm:text-sm px-4">
-        © 2026 PhotoFolio – تم الربط بـ Supabase 🚀
+      <footer className="bg-amber-950 text-amber-200 py-6 text-center text-xs sm:text-sm">
+        © 2026 POB~Honey. جميع الحقوق محفوظة.
       </footer>
     </div>
   );
