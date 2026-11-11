@@ -94,14 +94,14 @@ export default function AdminPage() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageFile) {
-      alert('يرجى اختيار صورة للمنتج أولاً.');
+      alert('يرجى اختيار صورة للمنتج من الجهاز أولاً.');
       return;
     }
 
     setUploadingImage(true);
     try {
-      // 1. رفع الصورة إلى Supabase Storage
-      const fileName = `${Date.now()}-${imageFile.name}`;
+      // 1. رفع الصورة إلى Supabase Storage Bucket (products-images)
+      const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '_')}`;
       const { error: uploadError } = await supabase.storage
         .from('products-images')
         .upload(fileName, imageFile);
@@ -117,7 +117,7 @@ export default function AdminPage() {
 
       const imageUrl = publicUrlData.publicUrl;
 
-      // 3. حفظ المنتج في جدول المنتجات
+      // 3. حفظ المنتج بالرابط في قاعدة البيانات
       const { error: dbError } = await supabase.from('products').insert([
         { name, price: parseFloat(price), size, image: imageUrl, description }
       ]);
@@ -126,10 +126,10 @@ export default function AdminPage() {
 
       setName(''); setPrice(''); setImageFile(null); setImagePreview(''); setDescription('');
       fetchAdminData();
-      alert('تم رفع الصورة وإضافة المنتج بنجاح! 🍯');
+      alert('تم رفع الصورة على Supabase وإضافة المنتج بنجاح! 🍯');
     } catch (err: any) {
       console.error(err);
-      alert('حدث خطأ أثناء رفع الصورة أو حفظ المنتج: ' + (err.message || ''));
+      alert('حدث خطأ أثناء رفع الصورة: ' + (err.message || 'تأكد من إعدادات الـ Policies في الـ Bucket'));
     } finally {
       setUploadingImage(false);
     }
@@ -242,11 +242,11 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* 1. قسم إضافة منتج مع رفع صورة من الجهاز */}
+        {/* 1. قسم إضافة منتج مع رفع الصورة لـ Supabase */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-700" />
-            إضافة منتج أو باقة عسل جديدة (مع رفع الصورة)
+            إضافة منتج أو باقة عسل جديدة (ورفع الصورة مباشرة)
           </h2>
           <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -262,19 +262,19 @@ export default function AdminPage() {
               <input type="text" placeholder="مثال: 1 كيلو / نصف كيلو" required value={size} onChange={e => setSize(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             
-            {/* زر اختيار ورفع الصورة */}
+            {/* رفع الصورة من الجهاز */}
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">صورة المنتج من الجهاز</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">اختر صورة المنتج من الجهاز</label>
               <label className="w-full border border-dashed border-amber-300 bg-amber-50/30 hover:bg-amber-50 rounded-xl p-2.5 text-center cursor-pointer flex items-center justify-center gap-2 text-xs text-stone-700 transition">
                 <Upload className="w-4 h-4 text-amber-700" />
-                <span>{imageFile ? imageFile.name : 'اختر صورة المنتج'}</span>
+                <span>{imageFile ? imageFile.name : 'اختر صورة'}</span>
                 <input type="file" accept="image/*" onChange={handleImageSelect} required className="hidden" />
               </label>
             </div>
 
             {imagePreview && (
               <div className="sm:col-span-2 text-center">
-                <p className="text-xs font-bold text-stone-500 mb-1">معاينة الصورة:</p>
+                <p className="text-xs font-bold text-stone-500 mb-1">معاينة الصورة المختارة:</p>
                 <img src={imagePreview} alt="Preview" className="h-28 mx-auto rounded-xl border border-amber-200 object-cover shadow-sm" />
               </div>
             )}
@@ -285,7 +285,7 @@ export default function AdminPage() {
             </div>
 
             <button type="submit" disabled={uploadingImage} className="bg-amber-700 hover:bg-amber-800 disabled:bg-stone-400 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
-              {uploadingImage ? 'جاري رفع الصورة وإضافة المنتج...' : '+ حفظ وإضافة المنتج للمتجر'}
+              {uploadingImage ? 'جاري رفع الصورة إلى Supabase...' : '+ حفظ وإضافة المنتج للمتجر'}
             </button>
           </form>
         </div>
