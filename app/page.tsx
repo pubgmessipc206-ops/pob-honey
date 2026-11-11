@@ -71,7 +71,18 @@ export default function HoneyStore() {
     }
   };
 
+  // دالة محسنة تدعم الروابط العادية وفيديوهات الـ Shorts
   const getEmbedUrl = (url: string) => {
+    if (!url) return null;
+    
+    // التعامل مع روابط Shorts
+    if (url.includes('/shorts/')) {
+      const parts = url.split('/shorts/');
+      const videoId = parts[1]?.split('?')[0];
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    // التعامل مع الروابط العادية
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
