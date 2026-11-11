@@ -44,7 +44,7 @@ export default function HoneyStore() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
-  // Payment info from Admin
+  // Payment info from Supabase
   const [vodafoneCash, setVodafoneCash] = useState('');
   const [instaPay, setInstaPay] = useState('');
 
@@ -58,9 +58,14 @@ export default function HoneyStore() {
     try {
       const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
       const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+      const { data: sData } = await supabase.from('store_settings').select('*');
 
-      setVodafoneCash(localStorage.getItem('pob_vodafone_cash') || '');
-      setInstaPay(localStorage.getItem('pob_instapay') || '');
+      if (sData) {
+        sData.forEach(item => {
+          if (item.key === 'vodafone_cash') setVodafoneCash(item.value || '');
+          if (item.key === 'instapay') setInstaPay(item.value || '');
+        });
+      }
 
       if (pData) setProducts(pData);
       if (vData) setVideos(vData);
@@ -154,7 +159,7 @@ export default function HoneyStore() {
         }
         .animate-bee-3d {
           animation: fly3D 2.5s ease-in-out infinite;
-          filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.25)) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.1));
+          filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.25));
         }
         .logo-3d-glow {
           text-shadow: 2px 3px 0px rgba(120, 53, 15, 0.3), 0px 4px 12px rgba(245, 158, 11, 0.4);
@@ -179,7 +184,7 @@ export default function HoneyStore() {
               </div>
 
               {/* النحلة 3D القريبة من الشعار */}
-              <span className="text-2xl sm:text-3xl mr-2 animate-bee-hover animate-bee-3id inline-block select-none transform hover:scale-125 transition">
+              <span className="text-2xl sm:text-3xl mr-2 animate-bee-3d inline-block select-none">
                 🐝
               </span>
             </div>
@@ -199,11 +204,6 @@ export default function HoneyStore() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-amber-100 to-amber-50/50 py-16 sm:py-20 px-4 text-center overflow-hidden">
-        {/* عنصر جمالي 3D في الخلفية */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 text-4xl opacity-20 animate-honey-3d filter drop-shadow-md">
-          🍯
-        </div>
-
         <div className="max-w-3xl mx-auto relative z-10">
           <div className="inline-flex items-center gap-2 bg-amber-200/80 px-4 py-1.5 rounded-full text-amber-950 font-bold text-xs sm:text-sm mb-4 border border-amber-300 shadow-md">
             <span>من مناحلنا الطبيعية 100%</span>
@@ -266,7 +266,7 @@ export default function HoneyStore() {
         )}
       </section>
 
-      {/* Videos Section (YouTube, Shorts & TikTok) */}
+      {/* Videos Section */}
       {videos.length > 0 && (
         <section className="bg-amber-900/5 border-y border-amber-200 py-12 px-4">
           <div className="max-w-7xl mx-auto">
