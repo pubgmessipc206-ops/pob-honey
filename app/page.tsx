@@ -8,9 +8,9 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings, CreditCard, Upload, Download } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 const supabase = createClient(
@@ -43,14 +43,12 @@ export default function HoneyStore() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
-  const [paymentScreenshot, setPaymentScreenshot] = useState<string>('');
 
   // Payment info from Admin
   const [vodafoneCash, setVodafoneCash] = useState('');
   const [instaPay, setInstaPay] = useState('');
 
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -99,142 +97,17 @@ export default function HoneyStore() {
     }, 0);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPaymentScreenshot(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // دالة توليد وتحميل صورة الفاتورة البيضاء
-  const generateOrderImage = (): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 800;
-      canvas.height = 1000;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve('');
-        return;
-      }
-
-      // خلفية بيضاء نقية
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // رأس الفاتورة (لون ذهبي خفيف)
-      ctx.fillStyle = '#78350f'; // لون عسلي غامق
-      ctx.fillRect(0, 0, canvas.width, 120);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('POB ~ Honey 🍯', canvas.width / 2, 55);
-
-      ctx.font = '18px Arial';
-      ctx.fillText('فاتورة طلب منتجات العسل الطبيعي', canvas.width / 2, 90);
-
-      // بيانات العميل
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#1c1917';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText(`👤 الاسم: ${customerName || 'غير متوفر'}`, 750, 170);
-      ctx.fillText(`📞 الهاتف: ${customerPhone || 'غير متوفر'}`, 750, 210);
-      ctx.fillText(`📍 العنوان: ${customerAddress || 'غير متوفر'}`, 750, 250);
-
-      // خط فاصل
-      ctx.strokeStyle = '#e7e5e4';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(50, 290);
-      ctx.lineTo(750, 290);
-      ctx.stroke();
-
-      // جدول المنتجات
-      ctx.font = 'bold 22px Arial';
-      ctx.fillStyle = '#78350f';
-      ctx.fillText('📦 تفاصيل المنتجات المطلوبة:', 750, 340);
-
-      let startY = 380;
-      ctx.font = '18px Arial';
-      ctx.fillStyle = '#292524';
-
-      Object.entries(cart).forEach(([id, qty]) => {
-        const p = products.find(item => item.id === id);
-        if (p) {
-          const itemText = `- ${p.name} (${p.size}) × ${qty}`;
-          const priceText = `${p.price * qty} جنيه`;
-          ctx.fillText(itemText, 750, startY);
-          ctx.textAlign = 'left';
-          ctx.fillText(priceText, 50, startY);
-          ctx.textAlign = 'right';
-          startY += 45;
-        }
-      });
-
-      // خط فاصل قبل الإجمالي
-      ctx.strokeStyle = '#e7e5e4';
-      ctx.beginPath();
-      ctx.moveTo(50, startY + 10);
-      ctx.lineTo(750, startY + 10);
-      ctx.stroke();
-
-      // الإجمالي الكلي
-      startY += 60;
-      ctx.font = 'bold 24px Arial';
-      ctx.fillStyle = '#b45309';
-      ctx.fillText(`💰 الإجمالي الكلي: ${getTotalPrice()} جنيه`, 750, startY);
-
-      // إذا تم إرفاق صورة إيصال التحويل، نرسمها في الأسفل
-      if (paymentScreenshot) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = paymentScreenshot;
-        img.onload = () => {
-          startY += 40;
-          ctx.font = 'bold 16px Arial';
-          ctx.fillStyle = '#44403c';
-          ctx.fillText('📸 صورة إيصال التحويل المرفق:', 750, startY);
-          
-          startY += 15;
-          ctx.drawImage(img, 50, startY, 200, 150);
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => {
-          resolve(canvas.toDataURL('image/png'));
-        };
-      } else {
-        resolve(canvas.toDataURL('image/png'));
-      }
-    });
-  };
-
-  const handleWhatsAppCheckout = async (e: React.FormEvent) => {
+  const handleWhatsAppCheckout = (e: React.FormEvent) => {
     e.preventDefault();
     if (Object.keys(cart).length === 0) {
       alert('يرجى اختيار منتج واحد على الأقل قبل إتمام الطلب.');
       return;
     }
 
-    // توليد صورة الفاتورة البيضاء وتنزيلها تلقائياً على جهاز العميل
-    const dataUrl = await generateOrderImage();
-    if (dataUrl) {
-      const link = document.createElement('a');
-      link.download = `POB-Honey-Order-${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
-    }
-
-    // تجهيز رسالة الواتساب
     let message = `🛒 *طلب جديد من متجر POB~Honey*\n\n`;
     if (customerName) message += `👤 الاسم: ${customerName}\n`;
     if (customerPhone) message += `📞 رقم التليفون: ${customerPhone}\n`;
     if (customerAddress) message += `📍 العنوان: ${customerAddress}\n`;
-    if (paymentScreenshot) message += `📸 تم إرفاق سكرين التحويل مع الطلب (وتم تحميل صورة الفاتورة لجهازك).\n`;
     
     message += `\n*المنتجات المطلوبة:*\n`;
 
@@ -256,7 +129,6 @@ export default function HoneyStore() {
       {/* Header */}
       <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          {/* اسم المتجر بإضاءة الـ RGB المتحركة */}
           <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
             <ShoppingBag className="w-7 h-7" />
             <span className="rgb-title">POB~Honey</span>
@@ -373,7 +245,6 @@ export default function HoneyStore() {
           {(vodafoneCash || instaPay) && (
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-2 text-xs sm:text-sm">
               <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                <CreditCard className="w-4 h-4 text-amber-700" />
                 طرق الدفع المتاحة للتحويل:
               </div>
               {vodafoneCash && <p className="text-stone-700">📱 محفظة كاش: <span className="font-bold text-amber-900">{vodafoneCash}</span></p>}
@@ -397,31 +268,14 @@ export default function HoneyStore() {
               <input type="text" required value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="المدينة / المنطقة / الشارع" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
             </div>
 
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">رفع اسكرين التحويل (اختياري)</label>
-              <div className="flex items-center gap-2">
-                <label className="w-full border border-dashed border-stone-300 bg-stone-50 hover:bg-amber-50/50 rounded-xl p-3 text-center cursor-pointer flex items-center justify-center gap-2 text-xs sm:text-sm text-stone-600 transition">
-                  <Upload className="w-4 h-4 text-amber-700" />
-                  <span>{paymentScreenshot ? 'تم اختيار الصورة بنجاح ✅' : 'اختر صورة إيصال التحويل'}</span>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-              </div>
-              {paymentScreenshot && (
-                <div className="mt-2 text-center">
-                  <img src={paymentScreenshot} alt="Preview" className="h-20 mx-auto rounded-lg border border-amber-300 object-contain" />
-                </div>
-              )}
-            </div>
-
             <div className="border-t border-b border-amber-100 py-3 my-2 flex justify-between font-bold text-amber-950">
               <span>الإجمالي الكلي:</span>
               <span>{getTotalPrice()} جنيه</span>
             </div>
 
             <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition text-sm sm:text-base">
-              <Download className="w-5 h-5" />
               <MessageCircle className="w-5 h-5" />
-              تنزيل فاتورة الطلب وإرسالها للواتساب
+              إرسال الطلب للواتساب
             </button>
           </form>
         </div>
