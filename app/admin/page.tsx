@@ -44,7 +44,8 @@ export default function AdminPage() {
   const [vodafoneCash, setVodafoneCash] = useState('');
   const [instaPay, setInstaPay] = useState('');
 
-  const ADMIN_PASSWORD = '123456';
+  // تم تغيير كلمة المرور هنا
+  const ADMIN_PASSWORD = '25102005a';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
