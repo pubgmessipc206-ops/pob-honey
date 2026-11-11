@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* تأثير الـ RGB المتحرك لإضاءة اسم المتجر */
+@keyframes rgbGlow {
+  0% { color: #ff3366; text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 20px rgba(255, 51, 102, 0.4); }
+  33% { color: #33ccff; text-shadow: 0 0 10px rgba(51, 204, 255, 0.6), 0 0 20px rgba(51, 204, 255, 0.4); }
+  66% { color: #ffcc00; text-shadow: 0 0 10px rgba(255, 204, 0, 0.6), 0 0 20px rgba(255, 204, 0, 0.4); }
+  100% { color: #ff3366; text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 20px rgba(255, 51, 102, 0.4); }
+}
+
+.rgb-title {
+  animation: rgbGlow 5s infinite linear;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
