@@ -8,9 +8,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings, CreditCard, Upload } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings, CreditCard, Upload, Download } from 'lucide-react';
 import Link from 'next/link';
 
 const supabase = createClient(
@@ -50,6 +50,7 @@ export default function HoneyStore() {
   const [instaPay, setInstaPay] = useState('');
 
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -109,18 +110,131 @@ export default function HoneyStore() {
     }
   };
 
-  const handleWhatsAppCheckout = (e: React.FormEvent) => {
+  // دالة توليد وتحميل صورة الفاتورة البيضاء
+  const generateOrderImage = (): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 1000;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve('');
+        return;
+      }
+
+      // خلفية بيضاء نقية
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // رأس الفاتورة (لون ذهبي خفيف)
+      ctx.fillStyle = '#78350f'; // لون عسلي غامق
+      ctx.fillRect(0, 0, canvas.width, 120);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('POB ~ Honey 🍯', canvas.width / 2, 55);
+
+      ctx.font = '18px Arial';
+      ctx.fillText('فاتورة طلب منتجات العسل الطبيعي', canvas.width / 2, 90);
+
+      // بيانات العميل
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#1c1917';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`👤 الاسم: ${customerName || 'غير متوفر'}`, 750, 170);
+      ctx.fillText(`📞 الهاتف: ${customerPhone || 'غير متوفر'}`, 750, 210);
+      ctx.fillText(`📍 العنوان: ${customerAddress || 'غير متوفر'}`, 750, 250);
+
+      // خط فاصل
+      ctx.strokeStyle = '#e7e5e4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(50, 290);
+      ctx.lineTo(750, 290);
+      ctx.stroke();
+
+      // جدول المنتجات
+      ctx.font = 'bold 22px Arial';
+      ctx.fillStyle = '#78350f';
+      ctx.fillText('📦 تفاصيل المنتجات المطلوبة:', 750, 340);
+
+      let startY = 380;
+      ctx.font = '18px Arial';
+      ctx.fillStyle = '#292524';
+
+      Object.entries(cart).forEach(([id, qty]) => {
+        const p = products.find(item => item.id === id);
+        if (p) {
+          const itemText = `- ${p.name} (${p.size}) × ${qty}`;
+          const priceText = `${p.price * qty} جنيه`;
+          ctx.fillText(itemText, 750, startY);
+          ctx.textAlign = 'left';
+          ctx.fillText(priceText, 50, startY);
+          ctx.textAlign = 'right';
+          startY += 45;
+        }
+      });
+
+      // خط فاصل قبل الإجمالي
+      ctx.strokeStyle = '#e7e5e4';
+      ctx.beginPath();
+      ctx.moveTo(50, startY + 10);
+      ctx.lineTo(750, startY + 10);
+      ctx.stroke();
+
+      // الإجمالي الكلي
+      startY += 60;
+      ctx.font = 'bold 24px Arial';
+      ctx.fillStyle = '#b45309';
+      ctx.fillText(`💰 الإجمالي الكلي: ${getTotalPrice()} جنيه`, 750, startY);
+
+      // إذا تم إرفاق صورة إيصال التحويل، نرسمها في الأسفل
+      if (paymentScreenshot) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = paymentScreenshot;
+        img.onload = () => {
+          startY += 40;
+          ctx.font = 'bold 16px Arial';
+          ctx.fillStyle = '#44403c';
+          ctx.fillText('📸 صورة إيصال التحويل المرفق:', 750, startY);
+          
+          startY += 15;
+          ctx.drawImage(img, 50, startY, 200, 150);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => {
+          resolve(canvas.toDataURL('image/png'));
+        };
+      } else {
+        resolve(canvas.toDataURL('image/png'));
+      }
+    });
+  };
+
+  const handleWhatsAppCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (Object.keys(cart).length === 0) {
       alert('يرجى اختيار منتج واحد على الأقل قبل إتمام الطلب.');
       return;
     }
 
+    // توليد صورة الفاتورة البيضاء وتنزيلها تلقائياً على جهاز العميل
+    const dataUrl = await generateOrderImage();
+    if (dataUrl) {
+      const link = document.createElement('a');
+      link.download = `POB-Honey-Order-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
+
+    // تجهيز رسالة الواتساب
     let message = `🛒 *طلب جديد من متجر POB~Honey*\n\n`;
     if (customerName) message += `👤 الاسم: ${customerName}\n`;
     if (customerPhone) message += `📞 رقم التليفون: ${customerPhone}\n`;
     if (customerAddress) message += `📍 العنوان: ${customerAddress}\n`;
-    if (paymentScreenshot) message += `📸 تم إرفاق سكرين التحويل مع الطلب.\n`;
+    if (paymentScreenshot) message += `📸 تم إرفاق سكرين التحويل مع الطلب (وتم تحميل صورة الفاتورة لجهازك).\n`;
     
     message += `\n*المنتجات المطلوبة:*\n`;
 
@@ -305,8 +419,9 @@ export default function HoneyStore() {
             </div>
 
             <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition text-sm sm:text-base">
+              <Download className="w-5 h-5" />
               <MessageCircle className="w-5 h-5" />
-              إرسال الطلب للواتساب
+              تنزيل فاتورة الطلب وإرسالها للواتساب
             </button>
           </form>
         </div>
