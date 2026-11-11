@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard, Upload } from 'lucide-react';
+import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -32,10 +32,8 @@ export default function AdminPage() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('1 كيلو');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [image, setImage] = useState('');
   const [description, setDescription] = useState('');
-  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Form State - Video
   const [videoTitle, setVideoTitle] = useState('');
@@ -83,55 +81,17 @@ export default function AdminPage() {
     alert('تم حفظ بيانات الدفع بنجاح! 💳');
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile) {
-      alert('يرجى اختيار صورة للمنتج من الجهاز أولاً.');
-      return;
-    }
-
-    setUploadingImage(true);
-    try {
-      // 1. رفع الصورة إلى Supabase Storage Bucket (products-images)
-      const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '_')}`;
-      const { error: uploadError } = await supabase.storage
-        .from('products-images')
-        .upload(fileName, imageFile);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // 2. الحصول على الرابط العام للصورة
-      const { data: publicUrlData } = supabase.storage
-        .from('products-images')
-        .getPublicUrl(fileName);
-
-      const imageUrl = publicUrlData.publicUrl;
-
-      // 3. حفظ المنتج بالرابط في قاعدة البيانات
-      const { error: dbError } = await supabase.from('products').insert([
-        { name, price: parseFloat(price), size, image: imageUrl, description }
-      ]);
-
-      if (dbError) throw dbError;
-
-      setName(''); setPrice(''); setImageFile(null); setImagePreview(''); setDescription('');
+    const { error } = await supabase.from('products').insert([
+      { name, price: parseFloat(price), size, image, description }
+    ]);
+    if (!error) {
+      setName(''); setPrice(''); setImage(''); setDescription('');
       fetchAdminData();
-      alert('تم رفع الصورة على Supabase وإضافة المنتج بنجاح! 🍯');
-    } catch (err: any) {
-      console.error(err);
-      alert('حدث خطأ أثناء رفع الصورة: ' + (err.message || 'تأكد من إعدادات الـ Policies في الـ Bucket'));
-    } finally {
-      setUploadingImage(false);
+      alert('تم إضافة المنتج بنجاح! 🍯');
+    } else {
+      alert('حدث خطأ أثناء إضافة المنتج: ' + error.message);
     }
   };
 
@@ -242,11 +202,11 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* 1. قسم إضافة منتج مع رفع الصورة لـ Supabase */}
+        {/* 1. قسم إضافة منتج مع رابط الصورة */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-700" />
-            إضافة منتج أو باقة عسل جديدة (ورفع الصورة مباشرة)
+            إضافة منتج أو باقة عسل جديدة
           </h2>
           <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -261,31 +221,16 @@ export default function AdminPage() {
               <label className="block text-xs font-bold text-stone-700 mb-1">الحجم أو العبوة</label>
               <input type="text" placeholder="مثال: 1 كيلو / نصف كيلو" required value={size} onChange={e => setSize(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
-            
-            {/* رفع الصورة من الجهاز */}
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">اختر صورة المنتج من الجهاز</label>
-              <label className="w-full border border-dashed border-amber-300 bg-amber-50/30 hover:bg-amber-50 rounded-xl p-2.5 text-center cursor-pointer flex items-center justify-center gap-2 text-xs text-stone-700 transition">
-                <Upload className="w-4 h-4 text-amber-700" />
-                <span>{imageFile ? imageFile.name : 'اختر صورة'}</span>
-                <input type="file" accept="image/*" onChange={handleImageSelect} required className="hidden" />
-              </label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">رابط صورة المنتج (URL)</label>
+              <input type="url" placeholder="https://i.ibb.co/..." required value={image} onChange={e => setImage(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
-
-            {imagePreview && (
-              <div className="sm:col-span-2 text-center">
-                <p className="text-xs font-bold text-stone-500 mb-1">معاينة الصورة المختارة:</p>
-                <img src={imagePreview} alt="Preview" className="h-28 mx-auto rounded-xl border border-amber-200 object-cover shadow-sm" />
-              </div>
-            )}
-
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-stone-700 mb-1">وصف المنتج</label>
               <textarea placeholder="وصف مختصر لفوائد العسل..." value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" rows={2} />
             </div>
-
-            <button type="submit" disabled={uploadingImage} className="bg-amber-700 hover:bg-amber-800 disabled:bg-stone-400 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
-              {uploadingImage ? 'جاري رفع الصورة إلى Supabase...' : '+ حفظ وإضافة المنتج للمتجر'}
+            <button type="submit" className="bg-amber-700 hover:bg-amber-800 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
+              + حفظ وإضافة المنتج للمتجر
             </button>
           </form>
         </div>
