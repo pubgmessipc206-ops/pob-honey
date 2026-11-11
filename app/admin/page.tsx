@@ -44,12 +44,10 @@ export default function AdminPage() {
   const [vodafoneCash, setVodafoneCash] = useState('');
   const [instaPay, setInstaPay] = useState('');
 
-  // تم تغيير كلمة المرور هنا
-  const ADMIN_PASSWORD = '25102005a';
-
+  // دالة تسجيل الدخول المباشرة بالكلمة الجديدة
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === ADMIN_PASSWORD) {
+    if (passwordInput === '25102005a') {
       setIsAuthenticated(true);
       fetchAdminData();
     } else {
