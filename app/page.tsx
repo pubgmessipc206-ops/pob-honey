@@ -1,3 +1,11 @@
+/**
+ * ========================================================
+ * 🍯 Project: POB~Honey Store
+ * 👨‍💻 Developed & Crafted by: Eng. Mahmoud Ramadan (محمود رمضان)
+ * 🚀 Powered by: Next.js, Tailwind CSS & Supabase
+ * ========================================================
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -317,7 +325,7 @@ export default function HoneyStore() {
       )}
 
       <footer className="bg-amber-950 text-amber-200 py-6 text-center text-xs sm:text-sm">
-        © 2026 POB~Honey. جميع الحقوق محفوظة.
+        © 2026 POB~Honey. Developed by Eng. Mahmoud Ramadan. جميع الحقوق محفوظة.
       </footer>
     </div>
   );
