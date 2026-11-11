@@ -3,268 +3,215 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { ShoppingBag, Plus, Trash2, ArrowRight, Video } from 'lucide-react';
 
-interface MediaItem {
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  size: string;
+  image: string;
+  description: string;
+}
+
+interface VideoItem {
   id: string;
   title: string;
-  url: string;
-  type: string;
-  section: string;
-  created_at: string;
+  youtube_url: string;
 }
 
 export default function AdminPage() {
-  const [mounted, setMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  
-  const [title, setTitle] = useState('');
-  const [section, setSection] = useState('gallery');
-  const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const ADMIN_PASSWORD = 'admin123';
+  // Form State - Product
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [size, setSize] = useState('1 كيلو');
+  const [image, setImage] = useState('');
+  const [description, setDescription] = useState('');
+
+  // Form State - Video
+  const [videoTitle, setVideoTitle] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   useEffect(() => {
-    setMounted(true);
-    const savedAuth = sessionStorage.getItem('admin_authenticated');
-    if (savedAuth === 'true') {
-      setIsAuthenticated(true);
-      fetchMedia();
-    }
+    fetchAdminData();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('admin_authenticated', 'true');
-      fetchMedia();
-    } else {
-      alert('كلمة السر غير صحيحة!');
-    }
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_authenticated');
-    setIsAuthenticated(false);
-    setPasswordInput('');
-  };
-
-  const fetchMedia = async () => {
-    const { data, error } = await supabase
-      .from('media_items')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setMediaList(data);
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file || !title) return alert('الرجاء اختيار ملف وإدخال عنوان!');
-
-    setLoading(true);
-
+  const fetchAdminData = async () => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${section}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-
-      const publicUrl = publicUrlData.publicUrl;
-      const isVideo = file.type.startsWith('video');
-
-      const { error: dbError } = await supabase.from('media_items').insert([
-        {
-          title,
-          url: publicUrl,
-          type: isVideo ? 'video' : 'image',
-          section,
-        },
-      ]);
-
-      if (dbError) throw dbError;
-
-      alert('تم الرفع بنجاح! 🎉');
-      setTitle('');
-      setFile(null);
-      fetchMedia();
-    } catch (error: any) {
-      alert('حدث خطأ أثناء الرفع: ' + error.message);
+      const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+      const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+      if (pData) setProducts(pData);
+      if (vData) setVideos(vData);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت تأكد من الحذف؟')) return;
-
-    try {
-      const { error } = await supabase.from('media_items').delete().eq('id', id);
-      if (error) throw error;
-
-      alert('تم الحذف بنجاح');
-      fetchMedia();
-    } catch (error: any) {
-      alert('حدث خطأ أثناء الحذف: ' + error.message);
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { error } = await supabase.from('products').insert([
+      { name, price: parseFloat(price), size, image, description }
+    ]);
+    if (!error) {
+      setName(''); setPrice(''); setImage(''); setDescription('');
+      fetchAdminData();
+      alert('تم إضافة المنتج بنجاح! 🍯');
+    } else {
+      alert('حدث خطأ في إضافة المنتج');
     }
   };
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
-        جاري التحميل...
-      </div>
-    );
-  }
+  const handleDeleteProduct = async (id: string) => {
+    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+      await supabase.from('products').delete().eq('id', id);
+      fetchAdminData();
+    }
+  };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white rtl" dir="rtl">
-        <form onSubmit={handleLogin} className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl max-w-md w-full text-center space-y-6">
-          <div className="text-5xl">🔒</div>
-          <h1 className="text-2xl font-bold text-amber-400">لوحة التحكم المغلقة</h1>
-          <p className="text-sm text-slate-400">يرجى إدخال كلمة السر للدخول</p>
-          
-          <input
-            type="password"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            placeholder="أدخل كلمة السر هنا"
-            className="w-full p-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-center focus:outline-none focus:border-amber-400 transition"
-            required
-          />
+  const handleAddVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { error } = await supabase.from('videos').insert([
+      { title: videoTitle, youtube_url: youtubeUrl }
+    ]);
+    if (!error) {
+      setVideoTitle(''); setYoutubeUrl('');
+      fetchAdminData();
+      alert('تم إضافة الفيديو بنجاح! 🎥');
+    } else {
+      alert('حدث خطأ في إضافة الفيديو');
+    }
+  };
 
-          <button
-            type="submit"
-            className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 font-bold rounded-xl text-slate-950 transition"
-          >
-            دخول للوحة التحكم 🚀
-          </button>
-        </form>
-
-        <Link href="/" className="mt-6 text-slate-400 hover:text-amber-400 text-sm font-semibold transition">
-          ← العودة للصفحة الرئيسية للموقع
-        </Link>
-      </div>
-    );
-  }
+  const handleDeleteVideo = async (id: string) => {
+    if (confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
+      await supabase.from('videos').delete().eq('id', id);
+      fetchAdminData();
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-6 sm:p-10 rtl" dir="rtl">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-amber-400">
-            لوحة تحكم مشروع PhotoFolio 📸
-          </h1>
-          <div className="flex gap-3">
-            <Link
-              href="/"
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-1"
-            >
-              عرض الموقع 🌐
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-lg"
-            >
-              تسجيل خروج 🔒
-            </button>
+    <div className="min-h-screen bg-amber-50/30 text-stone-900 font-sans p-4 sm:p-8" dir="rtl">
+      <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* Top Header */}
+        <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-amber-200 shadow-md">
+          <div className="flex items-center gap-2 text-xl sm:text-2xl font-black text-amber-950">
+            <ShoppingBag className="w-7 h-7 text-amber-700" />
+            <span>لوحة تحكم متجر POB~Honey</span>
           </div>
+          <Link href="/" className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 transition">
+            <ArrowRight className="w-4 h-4" />
+            عرض المتجر 🍯
+          </Link>
         </div>
 
-        <form onSubmit={handleUpload} className="bg-slate-800 p-6 rounded-2xl space-y-4 mb-10 shadow-xl border border-slate-700">
-          <h2 className="text-xl font-semibold text-slate-200">إضافة صورة أو فيديو جديد</h2>
-          
-          <div>
-            <label className="block mb-2 text-sm font-medium text-slate-300">العنوان:</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="مثال: صورة غلاف المعرض الرئيسي"
-              className="w-full p-3 rounded-xl bg-slate-700 border border-slate-600 text-white focus:outline-none focus:border-amber-400 transition"
-              required
-            />
-          </div>
+        {/* 1. قسم إضافة منتج / باقة أسعار جديدة */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
+          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-amber-700" />
+            إضافة منتج أو باقة عسل جديدة
+          </h2>
+          <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">اسم المنتج أو البقة</label>
+              <input type="text" placeholder="مثال: عسل سدر ملكي" required value={name} onChange={e => setName(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">السعر (بالجنيه)</label>
+              <input type="number" placeholder="مثال: 450" required value={price} onChange={e => setPrice(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">الحجم أو العبوة</label>
+              <input type="text" placeholder="مثال: 1 كيلو / نصف كيلو" required value={size} onChange={e => setSize(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">رابط صورة المنتج (URL)</label>
+              <input type="url" placeholder="https://example.com/honey.jpg" required value={image} onChange={e => setImage(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-stone-700 mb-1">وصف المنتج</label>
+              <textarea placeholder="وصف مختصر لفوائد العسل..." value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" rows={2} />
+            </div>
+            <button type="submit" className="bg-amber-700 hover:bg-amber-800 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
+              + حفظ وإضافة المنتج للمتجر
+            </button>
+          </form>
+        </div>
 
-          <div>
-            <label className="block mb-2 text-sm font-medium text-slate-300">القسم المخصص:</label>
-            <select
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-              className="w-full p-3 rounded-xl bg-slate-700 border border-slate-600 text-white focus:outline-none focus:border-amber-400 transition"
-            >
-              <option value="hero">Hero (السلايدر الرئيسي)</option>
-              <option value="about">About (قسم من نحن)</option>
-              <option value="gallery">Gallery (معرض الصور والفيديوهات)</option>
-            </select>
-          </div>
+        {/* 2. قسم إضافة فيديو يوتيوب */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
+          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
+            <Video className="w-5 h-5 text-amber-700" />
+            إضافة فيديو توضيحي من يوتيوب 🎥
+          </h2>
+          <form onSubmit={handleAddVideo} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">عنوان الفيديو</label>
+              <input type="text" placeholder="مثال: جولة داخل مناحل العسل" required value={videoTitle} onChange={e => setVideoTitle(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">رابط يوتيوب الكامل (URL)</label>
+              <input type="url" placeholder="https://www.youtube.com/watch?v=..." required value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <button type="submit" className="bg-amber-700 hover:bg-amber-800 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
+              + إضافة الفيديو إلى المعرض
+            </button>
+          </form>
+        </div>
 
-          <div>
-            <label className="block mb-2 text-sm font-medium text-slate-300">اختر الملف (صورة أو فيديو):</label>
-            <input
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="w-full p-2 rounded-xl bg-slate-700 border border-slate-600 text-white cursor-pointer text-sm"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 font-bold rounded-xl transition text-slate-950 disabled:opacity-50 mt-4"
-          >
-            {loading ? 'جاري الرفع إلى Supabase...' : 'رفع الملف الآن 🚀'}
-          </button>
-        </form>
-
-        <div className="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
-          <h2 className="text-xl font-semibold mb-4 text-slate-200">الملفات المرفوعة حالياً</h2>
-          
-          {mediaList.length === 0 ? (
-            <p className="text-slate-400 text-center py-6">لا توجد ملفات مرفوعة بعد.</p>
+        {/* 3. قائمة المنتجات الحالية */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
+          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950">المنتجات والباقات الحالية ({products.length})</h2>
+          {loading ? (
+            <p className="text-stone-500 text-sm">جاري التحميل...</p>
+          ) : products.length === 0 ? (
+            <p className="text-stone-500 text-sm bg-amber-50 p-4 rounded-xl">لا توجد منتجات مضافة حتى الآن.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {mediaList.map((item) => (
-                <div key={item.id} className="bg-slate-700/60 p-3 rounded-xl border border-slate-600/50 flex flex-col justify-between">
+              {products.map(p => (
+                <div key={p.id} className="bg-amber-50/30 p-4 rounded-2xl border border-amber-200 flex flex-col justify-between shadow-sm">
                   <div>
-                    {item.type === 'video' ? (
-                      <video src={item.url} controls className="w-full h-36 object-cover rounded-lg mb-2" />
-                    ) : (
-                      <img src={item.url} alt={item.title} className="w-full h-36 object-cover rounded-lg mb-2" />
-                    )}
-                    <h3 className="font-bold text-sm text-slate-100 truncate">{item.title}</h3>
-                    <span className="text-xs font-semibold text-amber-400 bg-slate-800/80 px-2.5 py-1 rounded-md inline-block mt-2">
-                      {item.section}
-                    </span>
+                    <img src={p.image} alt={p.name} className="h-36 w-full object-cover rounded-xl mb-3 border border-amber-100" />
+                    <h3 className="font-bold text-stone-900">{p.name}</h3>
+                    <p className="text-amber-800 font-black text-sm mt-1">{p.price} جنيه <span className="text-xs bg-amber-100 px-2 py-0.5 rounded-md text-amber-900 font-semibold mr-1">{p.size}</span></p>
                   </div>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="mt-4 w-full py-1.5 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition"
-                  >
-                    حذف 🗑️
+                  <button onClick={() => handleDeleteProduct(p.id)} className="mt-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1">
+                    <Trash2 className="w-4 h-4" /> حذف المنتج
                   </button>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        {/* 4. قائمة الفيديوهات الحالية */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
+          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950">فيديوهات اليوتيوب المضافة ({videos.length})</h2>
+          {videos.length === 0 ? (
+            <p className="text-stone-500 text-sm bg-amber-50 p-4 rounded-xl">لا توجد فيديوهات مضافة حتى الآن.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {videos.map(v => (
+                <div key={v.id} className="bg-amber-50/30 p-4 rounded-2xl border border-amber-200 flex justify-between items-center gap-4">
+                  <div>
+                    <h3 className="font-bold text-stone-900 text-sm mb-1">{v.title}</h3>
+                    <p className="text-stone-500 text-xs truncate max-w-xs">{v.youtube_url}</p>
+                  </div>
+                  <button onClick={() => handleDeleteVideo(v.id)} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded-xl transition shrink-0 flex items-center gap-1">
+                    <Trash2 className="w-4 h-4" /> حذف
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
