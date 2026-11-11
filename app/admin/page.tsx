@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard, Upload } from 'lucide-react';
@@ -44,7 +44,6 @@ export default function AdminPage() {
   const [vodafoneCash, setVodafoneCash] = useState('');
   const [instaPay, setInstaPay] = useState('');
 
-  // تسجيل الدخول بالباسورد الجديد
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === '25102005a') {
@@ -59,11 +58,14 @@ export default function AdminPage() {
     try {
       const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
       const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+      const { data: sData } = await supabase.from('store_settings').select('*');
       
-      const savedCash = localStorage.getItem('pob_vodafone_cash') || '';
-      const savedInsta = localStorage.getItem('pob_instapay') || '';
-      setVodafoneCash(savedCash);
-      setInstaPay(savedInsta);
+      if (sData) {
+        sData.forEach(item => {
+          if (item.key === 'vodafone_cash') setVodafoneCash(item.value || '');
+          if (item.key === 'instapay') setInstaPay(item.value || '');
+        });
+      }
 
       if (pData) setProducts(pData);
       if (vData) setVideos(vData);
@@ -74,11 +76,16 @@ export default function AdminPage() {
     }
   };
 
-  const handleSavePayments = (e: React.FormEvent) => {
+  const handleSavePayments = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('pob_vodafone_cash', vodafoneCash);
-    localStorage.setItem('pob_instapay', instaPay);
-    alert('تم حفظ بيانات الدفع بنجاح! 💳');
+    
+    // حفظ أو تحديث بيانات الدفع في Supabase
+    await supabase.from('store_settings').upsert([
+      { key: 'vodafone_cash', value: vodafoneCash },
+      { key: 'instapay', value: instaPay }
+    ], { onConflict: 'key' });
+
+    alert('تم حفظ بيانات الدفع في قاعدة البيانات بنجاح! 💳');
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,12 +222,12 @@ export default function AdminPage() {
               <input type="text" placeholder="مثال: username@instapay" value={instaPay} onChange={e => setInstaPay(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <button type="submit" className="bg-amber-800 hover:bg-amber-900 text-white font-bold p-3 rounded-xl sm:col-span-2 transition text-sm">
-              حفظ بيانات الدفع 💾
+              حفظ بيانات الدفع في قاعدة البيانات 💾
             </button>
           </form>
         </div>
 
-        {/* 1. قسم إضافة منتج مع رفع الصورة محلياً */}
+        {/* 1. قسم إضافة منتج */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-700" />
@@ -265,11 +272,11 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* 2. قسم إضافة فيديو يوتيوب */}
+        {/* 2. قسم إضافة فيديو */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Video className="w-5 h-5 text-amber-700" />
-            إضافة فيديو توضيحي أو ريلز (Shorts) من يوتيوب 🎥
+            إضافة فيديو توضيحي أو ريلز (Shorts / TikTok) 🎥
           </h2>
           <form onSubmit={handleAddVideo} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -277,8 +284,8 @@ export default function AdminPage() {
               <input type="text" placeholder="مثال: جولة داخل مناحل العسل" required value={videoTitle} onChange={e => setVideoTitle(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">رابط يوتيوب الكامل أو Shorts (URL)</label>
-              <input type="url" placeholder="https://www.youtube.com/shorts/..." required value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <label className="block text-xs font-bold text-stone-700 mb-1">رابط الفيديو (URL)</label>
+              <input type="url" placeholder="https://..." required value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <button type="submit" className="bg-amber-700 hover:bg-amber-800 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
               + إضافة الفيديو إلى المعرض
@@ -311,7 +318,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* 4. الفيديوهات الحالية (مع زر الحذف) */}
+        {/* 4. الفيديوهات الحالية */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950">الفيديوهات الحالية في المعرض ({videos.length})</h2>
           {loading ? (
