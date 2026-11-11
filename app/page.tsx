@@ -50,9 +50,6 @@ export default function HoneyStore() {
 
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
 
-  // ضع رابط حساب التيك توك الخاص بك هنا
-  const TIKTOK_URL = 'https://www.tiktok.com/@pob_honey'; 
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -74,17 +71,27 @@ export default function HoneyStore() {
     }
   };
 
+  // دالة ذكية للتعرف على روابط يوتيوب، الـ Shorts، وتيك توك
   const getEmbedUrl = (url: string) => {
     if (!url) return null;
     
-    // التعامل مع روابط Shorts
+    // 1. تيك توك (TikTok)
+    if (url.includes('tiktok.com')) {
+      const match = url.match(/\/video\/(\d+)/);
+      if (match && match[1]) {
+        return `https://www.tiktok.com/embed/v2/${match[1]}`;
+      }
+      return url; // كخيار احتياطي إذا كان الرابط بصيغة أخرى
+    }
+
+    // 2. يوتيوب Shorts
     if (url.includes('/shorts/')) {
       const parts = url.split('/shorts/');
       const videoId = parts[1]?.split('?')[0];
       if (videoId) return `https://www.youtube.com/embed/${videoId}`;
     }
 
-    // التعامل مع الروابط العادية
+    // 3. يوتيوب العادي
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
@@ -147,22 +154,11 @@ export default function HoneyStore() {
             <span className="rgb-title">POB~Honey</span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* زر التيك توك */}
-            <a href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" className="bg-black hover:bg-stone-900 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 1 1-5.2-1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V6.07a6.28 6.28 0 0 0-1-.07A6.33 6.33 0 1 0 15.68 12V8.45a8.21 8.21 0 0 0 4.91 1.62V6.69z"/>
-              </svg>
-              تيك توك
-            </a>
-
-            {/* زر الواتساب */}
+          <div className="flex items-center gap-3">
             <a href="https://wa.me/201001316599" target="_blank" rel="noopener noreferrer" className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
               <Phone className="w-4 h-4" />
               واتساب
             </a>
-
-            {/* زر الإعدادات */}
             <Link href="/admin" title="الإعدادات" className="w-9 h-9 bg-amber-800/80 hover:bg-amber-900 text-amber-200 rounded-lg flex items-center justify-center border border-amber-600 transition">
               <Settings className="w-5 h-5" />
             </Link>
@@ -230,7 +226,7 @@ export default function HoneyStore() {
         )}
       </section>
 
-      {/* Youtube & Videos Section */}
+      {/* Videos Section (YouTube, Shorts & TikTok) */}
       {videos.length > 0 && (
         <section className="bg-amber-900/5 border-y border-amber-200 py-12 px-4">
           <div className="max-w-7xl mx-auto">
@@ -238,16 +234,26 @@ export default function HoneyStore() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {videos.map(video => {
                 const embedUrl = getEmbedUrl(video.youtube_url);
+                const isTikTok = video.youtube_url.includes('tiktok.com');
+
                 return (
                   <div key={video.id} className="bg-white rounded-2xl border border-amber-200 overflow-hidden shadow-md flex flex-col justify-between">
-                    <div className="relative h-48 bg-stone-900 flex items-center justify-center">
-                      {embedUrl ? (
+                    <div className="relative h-64 bg-stone-900 flex items-center justify-center">
+                      {isTikTok ? (
+                        <iframe 
+                          src={embedUrl || ''} 
+                          title={video.title} 
+                          className="w-full h-full" 
+                          allow="encrypted-media;" 
+                          allowFullScreen 
+                        />
+                      ) : embedUrl ? (
                         <iframe src={embedUrl} title={video.title} className="w-full h-full" allowFullScreen />
                       ) : (
-                        <a href={video.youtube_url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 text-amber-400 p-4 text-center">
+                        <button onClick={() => setSelectedVideo(video)} className="flex flex-col items-center gap-2 text-amber-400">
                           <Play className="w-12 h-12" />
-                          <span className="text-xs font-bold">مشاهدة الفيديو (رابط خارجي / TikTok)</span>
-                        </a>
+                          <span className="text-xs font-bold">تشغيل الفيديو</span>
+                        </button>
                       )}
                     </div>
                     <div className="p-4 text-center">
