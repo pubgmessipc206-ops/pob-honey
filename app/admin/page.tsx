@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock } from 'lucide-react';
+import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -39,7 +39,11 @@ export default function AdminPage() {
   const [videoTitle, setVideoTitle] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
 
-  const ADMIN_PASSWORD = '123456'; // تقدر تغير الباسورد ده زي ما تحب
+  // Payment Settings State
+  const [vodafoneCash, setVodafoneCash] = useState('');
+  const [instaPay, setInstaPay] = useState('');
+
+  const ADMIN_PASSWORD = '123456';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +59,13 @@ export default function AdminPage() {
     try {
       const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
       const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+      
+      // جلب بيانات الدفع المحفوظة لو وجدت
+      const savedCash = localStorage.getItem('pob_vodafone_cash') || '';
+      const savedInsta = localStorage.getItem('pob_instapay') || '';
+      setVodafoneCash(savedCash);
+      setInstaPay(savedInsta);
+
       if (pData) setProducts(pData);
       if (vData) setVideos(vData);
     } catch (err) {
@@ -62,6 +73,13 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSavePayments = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('pob_vodafone_cash', vodafoneCash);
+    localStorage.setItem('pob_instapay', instaPay);
+    alert('تم حفظ بيانات الدفع بنجاح! 💳');
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -106,7 +124,6 @@ export default function AdminPage() {
     }
   };
 
-  // شاشة تسجيل الدخول لو لم يتم إدخال الباسورد
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-amber-50/50 flex items-center justify-center p-4 font-sans" dir="rtl">
@@ -165,7 +182,28 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 1. قسم إضافة منتج / باقة أسعار جديدة */}
+        {/* قسم إعدادات وسائل الدفع (محفظة وإنستا باي) */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
+          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-amber-700" />
+            إعدادات وسائل الدفع (تظهر للزبون عند الطلب) 💳
+          </h2>
+          <form onSubmit={handleSavePayments} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">رقم المحفظة (فودافون كاش / اتصالات.. إلخ)</label>
+              <input type="text" placeholder="مثال: 01012345678" value={vodafoneCash} onChange={e => setVodafoneCash(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">حساب انستا باي (InstaPay Username)</label>
+              <input type="text" placeholder="مثال: username@instapay" value={instaPay} onChange={e => setInstaPay(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <button type="submit" className="bg-amber-800 hover:bg-amber-900 text-white font-bold p-3 rounded-xl sm:col-span-2 transition text-sm">
+              حفظ بيانات الدفع 💾
+            </button>
+          </form>
+        </div>
+
+        {/* 1. قسم إضافة منتج جديد */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-700" />
@@ -219,7 +257,7 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* 3. قائمة المنتجات الحالية */}
+        {/* 3. المنتجات الحالية */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950">المنتجات والباقات الحالية ({products.length})</h2>
           {loading ? (
@@ -237,28 +275,6 @@ export default function AdminPage() {
                   </div>
                   <button onClick={() => handleDeleteProduct(p.id)} className="mt-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1">
                     <Trash2 className="w-4 h-4" /> حذف المنتج
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 4. قائمة الفيديوهات الحالية */}
-        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
-          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950">فيديوهات اليوتيوب المضافة ({videos.length})</h2>
-          {videos.length === 0 ? (
-            <p className="text-stone-500 text-sm bg-amber-50 p-4 rounded-xl">لا توجد فيديوهات مضافة حتى الآن.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {videos.map(v => (
-                <div key={v.id} className="bg-amber-50/30 p-4 rounded-2xl border border-amber-200 flex justify-between items-center gap-4">
-                  <div>
-                    <h3 className="font-bold text-stone-900 text-sm mb-1">{v.title}</h3>
-                    <p className="text-stone-500 text-xs truncate max-w-xs">{v.youtube_url}</p>
-                  </div>
-                  <button onClick={() => handleDeleteVideo(v.id)} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded-xl transition shrink-0 flex items-center gap-1">
-                    <Trash2 className="w-4 h-4" /> حذف
                   </button>
                 </div>
               ))}
