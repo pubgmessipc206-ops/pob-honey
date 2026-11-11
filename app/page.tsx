@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings, CreditCard, Upload } from 'lucide-react';
 import Link from 'next/link';
 
 interface Product {
@@ -25,8 +25,17 @@ export default function HoneyStore() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Record<string, number>>({});
+  
+  // Checkout Form States
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState<string>('');
+
+  // Payment info from Admin
+  const [vodafoneCash, setVodafoneCash] = useState('');
+  const [instaPay, setInstaPay] = useState('');
+
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
 
   useEffect(() => {
@@ -37,6 +46,10 @@ export default function HoneyStore() {
     try {
       const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
       const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+
+      // جلب بيانات الدفع المحفوظة
+      setVodafoneCash(localStorage.getItem('pob_vodafone_cash') || '');
+      setInstaPay(localStorage.getItem('pob_instapay') || '');
 
       if (pData) setProducts(pData);
       if (vData) setVideos(vData);
@@ -73,6 +86,18 @@ export default function HoneyStore() {
     }, 0);
   };
 
+  // تحويل صورة الإسكرين إلى Base64 لعرضها أو إرسال تفاصيلها
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPaymentScreenshot(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleWhatsAppCheckout = (e: React.FormEvent) => {
     e.preventDefault();
     if (Object.keys(cart).length === 0) {
@@ -82,8 +107,11 @@ export default function HoneyStore() {
 
     let message = `🛒 *طلب جديد من متجر POB~Honey*\n\n`;
     if (customerName) message += `👤 الاسم: ${customerName}\n`;
-    if (customerAddress) message += `📍 العنوان: ${customerAddress}\n\n`;
-    message += `*المنتجات المطلوبة:*\n`;
+    if (customerPhone) message += `📞 رقم التليفون: ${customerPhone}\n`;
+    if (customerAddress) message += `📍 العنوان: ${customerAddress}\n`;
+    if (paymentScreenshot) message += `📸 تم إرفاق سكرين التحويل مع الطلب.\n`;
+    
+    message += `\n*المنتجات المطلوبة:*\n`;
 
     Object.entries(cart).forEach(([id, qty]) => {
       const p = products.find(item => item.id === id);
@@ -100,14 +128,12 @@ export default function HoneyStore() {
 
   return (
     <div className="min-h-screen bg-amber-50/40 text-stone-800 font-sans" dir="rtl">
-      {/* Header مع أيقونة الإعدادات المخفية على الجنب */}
+      {/* Header */}
       <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
-              <ShoppingBag className="w-7 h-7" />
-              <span>POB~Honey</span>
-            </div>
+          <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
+            <ShoppingBag className="w-7 h-7" />
+            <span>POB~Honey</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -115,7 +141,6 @@ export default function HoneyStore() {
               <Phone className="w-4 h-4" />
               واتساب
             </a>
-            {/* أيقونة الإعدادات المخفية على جنب */}
             <Link href="/admin" title="الإعدادات" className="w-9 h-9 bg-amber-800/80 hover:bg-amber-900 text-amber-200 rounded-lg flex items-center justify-center border border-amber-600 transition">
               <Settings className="w-5 h-5" />
             </Link>
@@ -214,23 +239,61 @@ export default function HoneyStore() {
         </section>
       )}
 
-      {/* Checkout Form */}
+      {/* Checkout Form & Payment Info */}
       <section className="max-w-xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-2xl shadow-xl border border-amber-200 p-6 sm:p-8">
-          <h3 className="text-xl sm:text-2xl font-black text-amber-950 mb-6 text-center">إتمام الطلب عبر الواتساب</h3>
+        <div className="bg-white rounded-2xl shadow-xl border border-amber-200 p-6 sm:p-8 space-y-6">
+          <h3 className="text-xl sm:text-2xl font-black text-amber-950 text-center">إتمام الطلب عبر الواتساب</h3>
+
+          {/* عرض طرق الدفع لو مضافة من لوحة التحكم */}
+          {(vodafoneCash || instaPay) && (
+            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-2 text-xs sm:text-sm">
+              <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-amber-700" />
+                طرق الدفع المتاحة للتحويل:
+              </div>
+              {vodafoneCash && <p className="text-stone-700">📱 محفظة كاش: <span className="font-bold text-amber-900">{vodafoneCash}</span></p>}
+              {instaPay && <p className="text-stone-700">💳 انستا باي: <span className="font-bold text-amber-900">{instaPay}</span></p>}
+            </div>
+          )}
+
           <form onSubmit={handleWhatsAppCheckout} className="space-y-4">
             <div>
               <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">الاسم الكريم</label>
               <input type="text" required value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="ادخل اسمك هنا" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
             </div>
+
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">رقم التليفون</label>
+              <input type="tel" required value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="010xxxxxxxx" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+            </div>
+
             <div>
               <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">عنوان التوصيل التفصيلي</label>
               <input type="text" required value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="المدينة / المنطقة / الشارع" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
             </div>
+
+            {/* رفع اسكرين التحويل */}
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">رفع سكرين التحويل (اختياري)</label>
+              <div className="flex items-center gap-2">
+                <label className="w-full border border-dashed border-stone-300 bg-stone-50 hover:bg-amber-50/50 rounded-xl p-3 text-center cursor-pointer flex items-center justify-center gap-2 text-xs sm:text-sm text-stone-600 transition">
+                  <Upload className="w-4 h-4 text-amber-700" />
+                  <span>{paymentScreenshot ? 'تم اختيار الصورة بنجاح ✅' : 'اختر صورة إيصال التحويل'}</span>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+              </div>
+              {paymentScreenshot && (
+                <div className="mt-2 text-center">
+                  <img src={paymentScreenshot} alt="Preview" className="h-20 mx-auto rounded-lg border border-amber-300 object-contain" />
+                </div>
+              )}
+            </div>
+
             <div className="border-t border-b border-amber-100 py-3 my-2 flex justify-between font-bold text-amber-950">
               <span>الإجمالي الكلي:</span>
               <span>{getTotalPrice()} جنيه</span>
             </div>
+
             <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition text-sm sm:text-base">
               <MessageCircle className="w-5 h-5" />
               إرسال الطلب للواتساب
