@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock, CreditCard, Upload } from 'lucide-react';
@@ -44,7 +44,7 @@ export default function AdminPage() {
   const [vodafoneCash, setVodafoneCash] = useState('');
   const [instaPay, setInstaPay] = useState('');
 
-  // دالة تسجيل الدخول المباشرة بالكلمة الجديدة
+  // تسجيل الدخول بالباسورد الجديد
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === '25102005a') {
@@ -269,7 +269,7 @@ export default function AdminPage() {
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-amber-950 flex items-center gap-2">
             <Video className="w-5 h-5 text-amber-700" />
-            إضافة فيديو توضيحي من يوتيوب 🎥
+            إضافة فيديو توضيحي أو ريلز (Shorts) من يوتيوب 🎥
           </h2>
           <form onSubmit={handleAddVideo} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -277,8 +277,8 @@ export default function AdminPage() {
               <input type="text" placeholder="مثال: جولة داخل مناحل العسل" required value={videoTitle} onChange={e => setVideoTitle(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">رابط يوتيوب الكامل (URL)</label>
-              <input type="url" placeholder="https://www.youtube.com/watch?v=..." required value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <label className="block text-xs font-bold text-stone-700 mb-1">رابط يوتيوب الكامل أو Shorts (URL)</label>
+              <input type="url" placeholder="https://www.youtube.com/shorts/..." required value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <button type="submit" className="bg-amber-700 hover:bg-amber-800 text-white font-black p-3.5 rounded-xl sm:col-span-2 transition shadow-md text-sm sm:text-base">
               + إضافة الفيديو إلى المعرض
@@ -304,6 +304,30 @@ export default function AdminPage() {
                   </div>
                   <button onClick={() => handleDeleteProduct(p.id)} className="mt-4 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1">
                     <Trash2 className="w-4 h-4" /> حذف المنتج
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 4. الفيديوهات الحالية (مع زر الحذف) */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-amber-200 shadow-md space-y-4">
+          <h2 className="text-lg sm:text-xl font-extrabold text-amber-950">الفيديوهات الحالية في المعرض ({videos.length})</h2>
+          {loading ? (
+            <p className="text-stone-500 text-sm">جاري التحميل...</p>
+          ) : videos.length === 0 ? (
+            <p className="text-stone-500 text-sm bg-amber-50 p-4 rounded-xl">لا توجد فيديوهات مضافة حتى الآن.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {videos.map(v => (
+                <div key={v.id} className="bg-amber-50/30 p-4 rounded-2xl border border-amber-200 flex flex-col justify-between shadow-sm">
+                  <div>
+                    <h3 className="font-bold text-stone-900 text-sm mb-2">{v.title}</h3>
+                    <p className="text-xs text-stone-500 truncate mb-3" dir="ltr">{v.youtube_url}</p>
+                  </div>
+                  <button onClick={() => handleDeleteVideo(v.id)} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1">
+                    <Trash2 className="w-4 h-4" /> حذف الفيديو
                   </button>
                 </div>
               ))}
