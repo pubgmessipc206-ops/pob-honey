@@ -136,58 +136,61 @@ export default function HoneyStore() {
 
   return (
     <div className="min-h-screen bg-amber-50/40 text-stone-800 font-sans" dir="rtl">
-      {/* أنيميشن قطرات العسل والتساقط والنحلة */}
+      {/* أنيميشن 3D احترافي للعسل والنحلة */}
       <style jsx global>{`
-        @keyframes dripHoney {
-          0% { transform: translateY(0) scaleY(1); opacity: 0.9; }
-          60% { transform: translateY(18px) scaleY(1.4); opacity: 1; }
-          100% { transform: translateY(32px) scaleY(0.4); opacity: 0; }
+        @keyframes drip3D {
+          0% { transform: translateY(0) scaleY(1) translateZ(0); opacity: 0.9; filter: drop-shadow(0 2px 2px rgba(180, 83, 9, 0.4)); }
+          50% { transform: translateY(16px) scaleY(1.5) translateZ(10px); opacity: 1; filter: drop-shadow(0 6px 4px rgba(180, 83, 9, 0.6)); }
+          100% { transform: translateY(30px) scaleY(0.5) translateZ(0); opacity: 0; filter: drop-shadow(0 1px 1px rgba(180, 83, 9, 0.2)); }
         }
-        @keyframes flyAround {
-          0% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(-8px, -10px) rotate(-12deg); }
-          50% { transform: translate(6px, -4px) rotate(8deg); }
-          75% { transform: translate(4px, 8px) rotate(-5deg); }
-          100% { transform: translate(0, 0) rotate(0deg); }
+        @keyframes fly3D {
+          0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+          30% { transform: translate3d(-10px, -14px, 20px) rotate(-15deg) scale(1.05); }
+          60% { transform: translate3d(8px, -6px, 10px) rotate(10deg) scale(0.98); }
+          100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
         }
-        .animate-honey-drip {
-          animation: dripHoney 2.5s infinite ease-in;
+        .animate-honey-3d {
+          animation: drip3D 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .animate-bee-hover {
-          animation: flyAround 2.2s ease-in-out infinite;
+        .animate-bee-3d {
+          animation: fly3D 2.5s ease-in-out infinite;
+          filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.25)) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.1));
+        }
+        .logo-3d-glow {
+          text-shadow: 2px 3px 0px rgba(120, 53, 15, 0.3), 0px 4px 12px rgba(245, 158, 11, 0.4);
         }
       `}</style>
 
       {/* Header */}
-      <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
+      <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-lg px-4 sm:px-6 py-4 border-b border-amber-600/50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          {/* شعار البراند مع النحلة النازلة وتساقط العسل */}
+          {/* شعار البراند مع تأثير 3D للعسل والنحلة */}
           <div className="flex items-center gap-2">
             <div className="relative inline-flex items-center">
-              <span className="text-xl sm:text-2xl font-black text-amber-200 tracking-wider">
+              <span className="text-xl sm:text-2xl font-black text-amber-100 tracking-wider logo-3d-glow">
                 POB~Honey
               </span>
               
-              {/* قطرات العسل المتساقطة من أسفل الشعار */}
-              <div className="absolute -bottom-3 left-4 flex gap-3 pointer-events-none">
-                <span className="w-1.5 h-3 bg-amber-400 rounded-full animate-honey-drip" style={{ animationDelay: '0s' }}></span>
-                <span className="w-2 h-3.5 bg-amber-300 rounded-full animate-honey-drip" style={{ animationDelay: '0.8s' }}></span>
-                <span className="w-1.5 h-2.5 bg-amber-400 rounded-full animate-honey-drip" style={{ animationDelay: '1.4s' }}></span>
+              {/* قطرات العسل 3D المتساقطة من الشعار */}
+              <div className="absolute -bottom-3.5 left-5 flex gap-3 pointer-events-none">
+                <span className="w-1.5 h-3.5 bg-gradient-to-b from-amber-300 to-amber-500 rounded-full animate-honey-3d shadow-sm" style={{ animationDelay: '0s' }}></span>
+                <span className="w-2 h-4 bg-gradient-to-b from-amber-200 to-amber-400 rounded-full animate-honey-3d shadow-sm" style={{ animationDelay: '0.7s' }}></span>
+                <span className="w-1.5 h-3 bg-gradient-to-b from-amber-300 to-amber-600 rounded-full animate-honey-3d shadow-sm" style={{ animationDelay: '1.3s' }}></span>
               </div>
 
-              {/* النحلة القريبة من الشعار */}
-              <span className="text-xl sm:text-2xl mr-1 animate-bee-hover inline-block select-none">
+              {/* النحلة 3D القريبة من الشعار */}
+              <span className="text-2xl sm:text-3xl mr-2 animate-bee-hover animate-bee-3id inline-block select-none transform hover:scale-125 transition">
                 🐝
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <a href="https://wa.me/201001316599" target="_blank" rel="noopener noreferrer" className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
+            <a href="https://wa.me/201001316599" target="_blank" rel="noopener noreferrer" className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition shadow-md">
               <Phone className="w-4 h-4" />
               واتساب
             </a>
-            <Link href="/admin" title="الإعدادات" className="w-9 h-9 bg-amber-800/80 hover:bg-amber-900 text-amber-200 rounded-lg flex items-center justify-center border border-amber-600 transition">
+            <Link href="/admin" title="الإعدادات" className="w-9 h-9 bg-amber-800/80 hover:bg-amber-900 text-amber-200 rounded-lg flex items-center justify-center border border-amber-600 transition shadow-inner">
               <Settings className="w-5 h-5" />
             </Link>
           </div>
@@ -196,25 +199,25 @@ export default function HoneyStore() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-amber-100 to-amber-50/50 py-16 sm:py-20 px-4 text-center overflow-hidden">
-        {/* قطرة عسل كبيرة ديكورية في الهيرو */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-3xl opacity-30 animate-honey-drip">
-          💧
+        {/* عنصر جمالي 3D في الخلفية */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 text-4xl opacity-20 animate-honey-3d filter drop-shadow-md">
+          🍯
         </div>
 
         <div className="max-w-3xl mx-auto relative z-10">
-          <div className="inline-flex items-center gap-2 bg-amber-200/60 px-4 py-1.5 rounded-full text-amber-950 font-bold text-xs sm:text-sm mb-4 border border-amber-300/80 shadow-sm">
+          <div className="inline-flex items-center gap-2 bg-amber-200/80 px-4 py-1.5 rounded-full text-amber-950 font-bold text-xs sm:text-sm mb-4 border border-amber-300 shadow-md">
             <span>من مناحلنا الطبيعية 100%</span>
-            <span className="animate-bee-hover">🐝</span>
+            <span className="animate-bee-3d text-lg">🐝</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-amber-950 mb-4">
+          <h1 className="text-3xl sm:text-5xl font-black text-amber-950 mb-4 logo-3d-glow">
             أجود أنواع العسل الطبيعي النقي 100%
           </h1>
-          <p className="text-amber-800 text-base sm:text-lg mb-6">
+          <p className="text-amber-800 text-base sm:text-lg mb-6 font-medium">
             من مناحلنا إلى مائدتك مباشرة. جودة مضمونة وصحة متكاملة لأسرتك.
           </p>
           <div className="flex justify-center gap-6 text-amber-900 font-bold text-sm">
-            <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-amber-700" /> مفحوص ومضمون</div>
-            <div className="flex items-center gap-1"><Award className="w-4 h-4 text-amber-700" /> إنتاج فاخر</div>
+            <div className="flex items-center gap-1 bg-white/60 px-3 py-1.5 rounded-xl shadow-sm border border-amber-200"><Shield className="w-4 h-4 text-amber-700" /> مفحوص ومضمون</div>
+            <div className="flex items-center gap-1 bg-white/60 px-3 py-1.5 rounded-xl shadow-sm border border-amber-200"><Award className="w-4 h-4 text-amber-700" /> إنتاج فاخر</div>
           </div>
         </div>
       </section>
@@ -231,7 +234,7 @@ export default function HoneyStore() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {products.map(product => (
-              <div key={product.id} className="bg-white rounded-2xl border border-amber-200 shadow-md overflow-hidden flex flex-col justify-between">
+              <div key={product.id} className="bg-white rounded-2xl border border-amber-200 shadow-lg hover:shadow-xl transition overflow-hidden flex flex-col justify-between">
                 <div>
                   <img src={product.image} alt={product.name} className="w-full h-52 object-cover" />
                   <div className="p-5">
@@ -247,11 +250,11 @@ export default function HoneyStore() {
                   <div className="flex items-center justify-between border border-amber-200 rounded-xl p-2 bg-amber-50/50">
                     <span className="text-xs font-bold text-amber-950">الكمية:</span>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => updateQuantity(product.id, -1)} className="w-7 h-7 bg-white border border-amber-300 rounded-lg flex items-center justify-center text-amber-900 font-bold hover:bg-amber-100">
+                      <button onClick={() => updateQuantity(product.id, -1)} className="w-7 h-7 bg-white border border-amber-300 rounded-lg flex items-center justify-center text-amber-900 font-bold hover:bg-amber-100 shadow-sm">
                         <Minus className="w-3.5 h-3.5" />
                       </button>
                       <span className="font-bold text-base w-6 text-center">{cart[product.id] || 0}</span>
-                      <button onClick={() => updateQuantity(product.id, 1)} className="w-7 h-7 bg-amber-600 text-white rounded-lg flex items-center justify-center font-bold hover:bg-amber-700">
+                      <button onClick={() => updateQuantity(product.id, 1)} className="w-7 h-7 bg-amber-600 text-white rounded-lg flex items-center justify-center font-bold hover:bg-amber-700 shadow-sm">
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -263,7 +266,7 @@ export default function HoneyStore() {
         )}
       </section>
 
-      {/* Videos Section (YouTube, Shorts & TikTok Cards) */}
+      {/* Videos Section (YouTube, Shorts & TikTok) */}
       {videos.length > 0 && (
         <section className="bg-amber-900/5 border-y border-amber-200 py-12 px-4">
           <div className="max-w-7xl mx-auto">
@@ -274,7 +277,7 @@ export default function HoneyStore() {
                 const isTikTok = video.youtube_url.includes('tiktok.com');
 
                 return (
-                  <div key={video.id} className="bg-white rounded-2xl border border-amber-200 overflow-hidden shadow-md flex flex-col justify-between">
+                  <div key={video.id} className="bg-white rounded-2xl border border-amber-200 overflow-hidden shadow-lg flex flex-col justify-between">
                     <div className="relative h-64 bg-stone-900 flex items-center justify-center">
                       {isTikTok ? (
                         <a 
@@ -283,12 +286,12 @@ export default function HoneyStore() {
                           rel="noopener noreferrer" 
                           className="w-full h-full bg-black flex flex-col items-center justify-center gap-3 text-white hover:bg-stone-950 transition group"
                         >
-                          <div className="w-14 h-14 bg-stone-800 rounded-full flex items-center justify-center group-hover:scale-110 transition shadow-lg border border-stone-700">
+                          <div className="w-14 h-14 bg-stone-800 rounded-full flex items-center justify-center group-hover:scale-110 transition shadow-xl border border-stone-700">
                             <svg className="w-7 h-7 fill-current text-white" viewBox="0 0 24 24">
                               <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 1 1-5.2-1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V6.07a6.28 6.28 0 0 0-1-.07A6.33 6.33 0 1 0 15.68 12V8.45a8.21 8.21 0 0 0 4.91 1.62V6.69z"/>
                             </svg>
                           </div>
-                          <span className="text-xs font-bold text-amber-200 bg-stone-800/80 px-3 py-1.5 rounded-xl border border-stone-700">مشاهدة فيديو تيك توك ↗</span>
+                          <span className="text-xs font-bold text-amber-200 bg-stone-800/80 px-3 py-1.5 rounded-xl border border-stone-700 shadow-md">مشاهدة فيديو تيك توك ↗</span>
                         </a>
                       ) : embedUrl ? (
                         <iframe src={embedUrl} title={video.title} className="w-full h-full" allowFullScreen />
@@ -346,7 +349,7 @@ export default function HoneyStore() {
               <span>{getTotalPrice()} جنيه</span>
             </div>
 
-            <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition text-sm sm:text-base">
+            <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition text-sm sm:text-base">
               <MessageCircle className="w-5 h-5" />
               إرسال الطلب للواتساب
             </button>
@@ -357,7 +360,7 @@ export default function HoneyStore() {
       {/* Lightbox Modal */}
       {selectedVideo && (
         <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSelectedVideo(null)}>
-          <div className="relative max-w-3xl w-full bg-stone-900 rounded-2xl overflow-hidden p-2" onClick={e => e.stopPropagation()}>
+          <div className="relative max-w-3xl w-full bg-stone-900 rounded-2xl overflow-hidden p-2 shadow-2xl" onClick={e => e.stopPropagation()}>
             <button onClick={() => setSelectedVideo(null)} className="absolute top-3 left-3 z-10 w-8 h-8 bg-stone-800 text-white rounded-full flex items-center justify-center font-bold">✕</button>
             <div className="w-full h-80 sm:h-96">
               <iframe src={getEmbedUrl(selectedVideo.youtube_url) || ''} title={selectedVideo.title} className="w-full h-full rounded-xl" allowFullScreen />
@@ -366,7 +369,7 @@ export default function HoneyStore() {
         </div>
       )}
 
-      <footer className="bg-amber-950 text-amber-200 py-6 text-center text-xs sm:text-sm">
+      <footer className="bg-amber-950 text-amber-200 py-6 text-center text-xs sm:text-sm border-t border-amber-900">
         © 2026 POB~Honey. Developed by Eng. Mahmoud Ramadan. جميع الحقوق محفوظة.
       </footer>
     </div>
