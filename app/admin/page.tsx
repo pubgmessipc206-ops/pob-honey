@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ShoppingBag, Plus, Trash2, ArrowRight, Video } from 'lucide-react';
+import { ShoppingBag, Plus, Trash2, ArrowRight, Video, Lock } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -21,6 +21,9 @@ interface VideoItem {
 }
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+
   const [products, setProducts] = useState<Product[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,9 +39,17 @@ export default function AdminPage() {
   const [videoTitle, setVideoTitle] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
+  const ADMIN_PASSWORD = '123456'; // تقدر تغير الباسورد ده زي ما تحب
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      fetchAdminData();
+    } else {
+      alert('كلمة المرور غير صحيحة!');
+    }
+  };
 
   const fetchAdminData = async () => {
     try {
@@ -95,6 +106,44 @@ export default function AdminPage() {
     }
   };
 
+  // شاشة تسجيل الدخول لو لم يتم إدخال الباسورد
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-amber-50/50 flex items-center justify-center p-4 font-sans" dir="rtl">
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-amber-200 max-w-md w-full text-center space-y-6">
+          <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-amber-950 mb-2">لوحة التحكم المحمية</h1>
+            <p className="text-stone-500 text-xs sm:text-sm">يرجى إدخال كلمة المرور للوصول إلى إدارة المتجر</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="password"
+              placeholder="كلمة المرور"
+              value={passwordInput}
+              onChange={e => setPasswordInput(e.target.value)}
+              required
+              className="w-full bg-amber-50/50 border border-amber-300 rounded-2xl px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+            <button
+              type="submit"
+              className="w-full bg-amber-700 hover:bg-amber-800 text-white font-bold py-3.5 rounded-2xl transition shadow-md"
+            >
+              دخول 🔓
+            </button>
+          </form>
+          <div className="pt-2">
+            <Link href="/" className="text-amber-700 text-xs font-bold hover:underline">
+              العودة إلى الصفحة الرئيسية للمتجر
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-amber-50/30 text-stone-900 font-sans p-4 sm:p-8" dir="rtl">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -105,10 +154,15 @@ export default function AdminPage() {
             <ShoppingBag className="w-7 h-7 text-amber-700" />
             <span>لوحة تحكم متجر POB~Honey</span>
           </div>
-          <Link href="/" className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 transition">
-            <ArrowRight className="w-4 h-4" />
-            عرض المتجر 🍯
-          </Link>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsAuthenticated(false)} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition border border-red-200">
+              قفل الجلسة 🔒
+            </button>
+            <Link href="/" className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 transition">
+              <ArrowRight className="w-4 h-4" />
+              عرض المتجر 🍯
+            </Link>
+          </div>
         </div>
 
         {/* 1. قسم إضافة منتج / باقة أسعار جديدة */}
@@ -119,7 +173,7 @@ export default function AdminPage() {
           </h2>
           <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">اسم المنتج أو البقة</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">اسم المنتج أو الباقة</label>
               <input type="text" placeholder="مثال: عسل سدر ملكي" required value={name} onChange={e => setName(e.target.value)} className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
