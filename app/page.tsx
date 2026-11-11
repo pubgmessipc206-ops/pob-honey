@@ -71,7 +71,6 @@ export default function HoneyStore() {
     }
   };
 
-  // دالة ذكية للتعرف على روابط يوتيوب والـ Shorts
   const getEmbedUrl = (url: string) => {
     if (!url) return null;
     
@@ -137,6 +136,20 @@ export default function HoneyStore() {
 
   return (
     <div className="min-h-screen bg-amber-50/40 text-stone-800 font-sans" dir="rtl">
+      {/* أنيميشن النحلة المتحركة */}
+      <style jsx global>{`
+        @keyframes flyBee {
+          0% { transform: translate(0, 0) rotate(0deg); }
+          25% { transform: translate(15px, -15px) rotate(10deg); }
+          50% { transform: translate(30px, 0) rotate(0deg); }
+          75% { transform: translate(15px, 15px) rotate(-10deg); }
+          100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .animate-bee {
+          animation: flyBee 3s ease-in-out infinite;
+        }
+      `}</style>
+
       {/* Header */}
       <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -157,9 +170,17 @@ export default function HoneyStore() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-amber-100 to-amber-50/50 py-12 sm:py-16 px-4 text-center">
-        <div className="max-w-3xl mx-auto">
+      {/* Hero Section with Flying Bee */}
+      <section className="relative bg-gradient-to-b from-amber-100 to-amber-50/50 py-16 sm:py-20 px-4 text-center overflow-hidden">
+        {/* النحلة المتحركة */}
+        <div className="absolute top-6 right-10 sm:right-24 text-4xl sm:text-5xl animate-bee drop-shadow-md select-none pointer-events-none">
+          🐝
+        </div>
+        <div className="absolute bottom-6 left-10 sm:left-24 text-3xl sm:text-4xl animate-bee drop-shadow-md select-none pointer-events-none" style={{ animationDelay: '1.5s' }}>
+          🍯
+        </div>
+
+        <div className="max-w-3xl mx-auto relative z-10">
           <h1 className="text-3xl sm:text-5xl font-black text-amber-950 mb-4">
             أجود أنواع العسل الطبيعي النقي 100%
           </h1>
