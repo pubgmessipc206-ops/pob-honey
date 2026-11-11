@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { ShoppingBag, MessageCircle, Shield, Award, Phone, Play, Plus, Minus, Settings, CreditCard, Upload } from 'lucide-react';
 import Link from 'next/link';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
 
 interface Product {
   id: string;
@@ -47,7 +52,6 @@ export default function HoneyStore() {
       const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
       const { data: vData } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
 
-      // جلب بيانات الدفع المحفوظة
       setVodafoneCash(localStorage.getItem('pob_vodafone_cash') || '');
       setInstaPay(localStorage.getItem('pob_instapay') || '');
 
@@ -86,7 +90,6 @@ export default function HoneyStore() {
     }, 0);
   };
 
-  // تحويل صورة الإسكرين إلى Base64 لعرضها أو إرسال تفاصيلها
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -131,9 +134,10 @@ export default function HoneyStore() {
       {/* Header */}
       <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* اسم المتجر بإضاءة الـ RGB المتحركة */}
           <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
             <ShoppingBag className="w-7 h-7" />
-            <span>POB~Honey</span>
+            <span className="rgb-title">POB~Honey</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -244,7 +248,6 @@ export default function HoneyStore() {
         <div className="bg-white rounded-2xl shadow-xl border border-amber-200 p-6 sm:p-8 space-y-6">
           <h3 className="text-xl sm:text-2xl font-black text-amber-950 text-center">إتمام الطلب عبر الواتساب</h3>
 
-          {/* عرض طرق الدفع لو مضافة من لوحة التحكم */}
           {(vodafoneCash || instaPay) && (
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-2 text-xs sm:text-sm">
               <div className="font-bold text-amber-950 flex items-center gap-1.5">
@@ -272,9 +275,8 @@ export default function HoneyStore() {
               <input type="text" required value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="المدينة / المنطقة / الشارع" className="w-full px-4 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" />
             </div>
 
-            {/* رفع اسكرين التحويل */}
             <div>
-              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">رفع سكرين التحويل (اختياري)</label>
+              <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1">رفع اسكرين التحويل (اختياري)</label>
               <div className="flex items-center gap-2">
                 <label className="w-full border border-dashed border-stone-300 bg-stone-50 hover:bg-amber-50/50 rounded-xl p-3 text-center cursor-pointer flex items-center justify-center gap-2 text-xs sm:text-sm text-stone-600 transition">
                   <Upload className="w-4 h-4 text-amber-700" />
