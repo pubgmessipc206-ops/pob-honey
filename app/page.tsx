@@ -136,26 +136,50 @@ export default function HoneyStore() {
 
   return (
     <div className="min-h-screen bg-amber-50/40 text-stone-800 font-sans" dir="rtl">
-      {/* أنيميشن النحلة المتحركة */}
+      {/* أنيميشن قطرات العسل والتساقط والنحلة */}
       <style jsx global>{`
-        @keyframes flyBee {
+        @keyframes dripHoney {
+          0% { transform: translateY(0) scaleY(1); opacity: 0.9; }
+          60% { transform: translateY(18px) scaleY(1.4); opacity: 1; }
+          100% { transform: translateY(32px) scaleY(0.4); opacity: 0; }
+        }
+        @keyframes flyAround {
           0% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(15px, -15px) rotate(10deg); }
-          50% { transform: translate(30px, 0) rotate(0deg); }
-          75% { transform: translate(15px, 15px) rotate(-10deg); }
+          25% { transform: translate(-8px, -10px) rotate(-12deg); }
+          50% { transform: translate(6px, -4px) rotate(8deg); }
+          75% { transform: translate(4px, 8px) rotate(-5deg); }
           100% { transform: translate(0, 0) rotate(0deg); }
         }
-        .animate-bee {
-          animation: flyBee 3s ease-in-out infinite;
+        .animate-honey-drip {
+          animation: dripHoney 2.5s infinite ease-in;
+        }
+        .animate-bee-hover {
+          animation: flyAround 2.2s ease-in-out infinite;
         }
       `}</style>
 
       {/* Header */}
       <nav className="sticky top-0 z-40 bg-amber-700/95 backdrop-blur-md text-white shadow-md px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2 text-xl sm:text-2xl font-black">
-            <ShoppingBag className="w-7 h-7" />
-            <span className="rgb-title">POB~Honey</span>
+          {/* شعار البراند مع النحلة النازلة وتساقط العسل */}
+          <div className="flex items-center gap-2">
+            <div className="relative inline-flex items-center">
+              <span className="text-xl sm:text-2xl font-black text-amber-200 tracking-wider">
+                POB~Honey
+              </span>
+              
+              {/* قطرات العسل المتساقطة من أسفل الشعار */}
+              <div className="absolute -bottom-3 left-4 flex gap-3 pointer-events-none">
+                <span className="w-1.5 h-3 bg-amber-400 rounded-full animate-honey-drip" style={{ animationDelay: '0s' }}></span>
+                <span className="w-2 h-3.5 bg-amber-300 rounded-full animate-honey-drip" style={{ animationDelay: '0.8s' }}></span>
+                <span className="w-1.5 h-2.5 bg-amber-400 rounded-full animate-honey-drip" style={{ animationDelay: '1.4s' }}></span>
+              </div>
+
+              {/* النحلة القريبة من الشعار */}
+              <span className="text-xl sm:text-2xl mr-1 animate-bee-hover inline-block select-none">
+                🐝
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -170,17 +194,18 @@ export default function HoneyStore() {
         </div>
       </nav>
 
-      {/* Hero Section with Flying Bee */}
+      {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-amber-100 to-amber-50/50 py-16 sm:py-20 px-4 text-center overflow-hidden">
-        {/* النحلة المتحركة */}
-        <div className="absolute top-6 right-10 sm:right-24 text-4xl sm:text-5xl animate-bee drop-shadow-md select-none pointer-events-none">
-          🐝
-        </div>
-        <div className="absolute bottom-6 left-10 sm:left-24 text-3xl sm:text-4xl animate-bee drop-shadow-md select-none pointer-events-none" style={{ animationDelay: '1.5s' }}>
-          🍯
+        {/* قطرة عسل كبيرة ديكورية في الهيرو */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-3xl opacity-30 animate-honey-drip">
+          💧
         </div>
 
         <div className="max-w-3xl mx-auto relative z-10">
+          <div className="inline-flex items-center gap-2 bg-amber-200/60 px-4 py-1.5 rounded-full text-amber-950 font-bold text-xs sm:text-sm mb-4 border border-amber-300/80 shadow-sm">
+            <span>من مناحلنا الطبيعية 100%</span>
+            <span className="animate-bee-hover">🐝</span>
+          </div>
           <h1 className="text-3xl sm:text-5xl font-black text-amber-950 mb-4">
             أجود أنواع العسل الطبيعي النقي 100%
           </h1>
@@ -238,7 +263,7 @@ export default function HoneyStore() {
         )}
       </section>
 
-      {/* Videos Section (YouTube, Shorts & TikTok) */}
+      {/* Videos Section (YouTube, Shorts & TikTok Cards) */}
       {videos.length > 0 && (
         <section className="bg-amber-900/5 border-y border-amber-200 py-12 px-4">
           <div className="max-w-7xl mx-auto">
